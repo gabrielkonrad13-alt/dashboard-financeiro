@@ -174,6 +174,21 @@
 
 
   <section id="visao" class="section active">
+    <div class="panel" style="margin-bottom:16px">
+      <div class="toolbar">
+        <div>
+          <h2>Período do dashboard</h2>
+          <p class="status">O painel principal mostra apenas o mês selecionado. Os totais anuais aparecem em cards separados.</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+          <div>
+            <label>Mês</label>
+            <input id="dashboardMonth" type="month" onchange="render()">
+          </div>
+          <button class="secondary" onclick="setCurrentMonth()">Mês atual</button>
+        </div>
+      </div>
+    </div>
     <div class="grid4">
       <div class="card"><div><small>Receitas do período</small><strong id="totalEntradas" class="positive">R$ 0,00</strong></div><div class="metricSub">Entradas fixas + variáveis</div></div>
       <div class="card"><div><small>Despesas do período</small><strong id="totalSaidas" class="negative">R$ 0,00</strong></div><div class="metricSub">Saídas + custos</div></div>
@@ -181,10 +196,10 @@
       <div class="card"><div><small>A receber</small><strong id="aReceber" class="warning">R$ 0,00</strong></div><div class="metricSub">Valores ainda pendentes</div></div>
     </div>
     <div class="grid4">
-      <div class="card"><small>Custos fixos</small><strong id="fixos" class="warning">R$ 0,00</strong></div>
-      <div class="card"><small>A pagar pendente</small><strong id="aPagar" class="negative">R$ 0,00</strong></div>
-      <div class="card"><small>Recebido / Pago</small><strong id="realizado" class="positive">R$ 0,00</strong></div>
-      <div class="card"><small>Lançamentos</small><strong id="qtdLancamentos" class="info">0</strong></div>
+      <div class="card"><small>Custos do mês</small><strong id="fixos" class="warning">R$ 0,00</strong></div>
+      <div class="card"><small>A pagar no mês</small><strong id="aPagar" class="negative">R$ 0,00</strong></div>
+      <div class="card"><small>Entradas anuais</small><strong id="entradasAno" class="positive">R$ 0,00</strong></div>
+      <div class="card"><small>Custos anuais</small><strong id="custosAno" class="negative">R$ 0,00</strong></div>
     </div>
     <div class="grid2">
       <div class="panel chartBox"><h2>Resultado por categoria</h2><p class="status">Distribuição financeira por categoria</p><canvas id="categoryChart"></canvas></div>
@@ -850,29 +865,71 @@ function statusClass(item){
   return "pending";
 }
 
+
+function getDashboardMonth(){
+  const input = document.getElementById("dashboardMonth");
+  if(!input || !input.value){
+    const now = new Date();
+    return now.toISOString().slice(0,7);
+  }
+  return input.value;
+}
+
+function setCurrentMonth(){
+  const input = document.getElementById("dashboardMonth");
+  const now = new Date();
+  input.value = now.toISOString().slice(0,7);
+  render();
+}
+
+function itemMonth(item){
+  const date = item.expectedDate || item.dueDate || item.date || "";
+  return String(date).slice(0,7);
+}
+
+function itemYear(item){
+  const date = item.expectedDate || item.dueDate || item.date || "";
+  return String(date).slice(0,4);
+}
+
+function itemsForSelectedMonth(){
+  const month = getDashboardMonth();
+  return items.filter(item => itemMonth(item) === month);
+}
+
+function itemsForSelectedYear(){
+  const year = getDashboardMonth().slice(0,4);
+  return items.filter(item => itemYear(item) === year);
+}
+
 function render(){
-  const entradas=items.filter(x=>isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
-  const saidas=items.filter(x=>!isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
-  const fixos=items.filter(x=>x.type==="Custo Fixo").reduce((s,x)=>s+Number(x.amount||0),0);
+  const monthItems = itemsForSelectedMonth();
+  const yearItems = itemsForSelectedYear();
+
+  const entradas=monthItems.filter(x=>isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const saidas=monthItems.filter(x=>!isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const custosMes=monthItems.filter(x=>x.type==="Custo Fixo" || x.type==="Custo Variável").reduce((s,x)=>s+Number(x.amount||0),0);
   const saldo=entradas-saidas;
-  const aReceber=items.filter(x=>isEntrada(x.type)&&!isPaid(x)).reduce((s,x)=>s+Number(x.amount||0),0);
-  const aPagar=items.filter(x=>!isEntrada(x.type)&&!isPaid(x)).reduce((s,x)=>s+Number(x.amount||0),0);
-  const realizado=items.filter(x=>isPaid(x)).reduce((s,x)=>s+Number(x.amount||0)*(isEntrada(x.type)?1:-1),0);
+  const aReceber=monthItems.filter(x=>isEntrada(x.type)&&!isPaid(x)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const aPagar=monthItems.filter(x=>!isEntrada(x.type)&&!isPaid(x)).reduce((s,x)=>s+Number(x.amount||0),0);
+
+  const entradasAno=yearItems.filter(x=>isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const custosAno=yearItems.filter(x=>x.type==="Custo Fixo" || x.type==="Custo Variável" || x.type==="Saída").reduce((s,x)=>s+Number(x.amount||0),0);
 
   document.getElementById("totalEntradas").textContent=brl(entradas);
   document.getElementById("totalSaidas").textContent=brl(saidas);
-  document.getElementById("fixos").textContent=brl(fixos);
+  document.getElementById("fixos").textContent=brl(custosMes);
   document.getElementById("saldo").textContent=brl(saldo);
   document.getElementById("saldo").className=saldo>=0?"positive":"negative";
   document.getElementById("aReceber").textContent=brl(aReceber);
   document.getElementById("aPagar").textContent=brl(aPagar);
-  document.getElementById("realizado").textContent=brl(realizado);
-  document.getElementById("qtdLancamentos").textContent=items.length;
+  document.getElementById("entradasAno").textContent=brl(entradasAno);
+  document.getElementById("custosAno").textContent=brl(custosAno);
 
   renderMainTable();
   renderSplitRecords();
   renderReports();
-  renderCharts();
+  renderCharts(monthItems);
 }
 
 function actionBtn(item){
@@ -984,8 +1041,12 @@ function renderReports(){
   makeSummary("categorySummary", groupBy("category"));
 }
 function groupBy(field){
+  return groupByScoped(items, field);
+}
+
+function groupByScoped(list, field){
   const g={};
-  items.forEach(x=>{
+  list.forEach(x=>{
     const key=x[field] || "Sem informação";
     const signal=isEntrada(x.type)?1:-1;
     g[key]=(g[key]||0)+Number(x.amount||0)*signal;
@@ -1001,11 +1062,11 @@ function makeSummary(id,obj){
   });
 }
 
-function renderCharts(){
+function renderCharts(scopeItems = itemsForSelectedMonth()){
   const catCanvas=document.getElementById("categoryChart");
   const flowCanvas=document.getElementById("flowChart");
   if(!catCanvas || !flowCanvas)return;
-  const byCategory=groupBy("category");
+  const byCategory=groupByScoped(scopeItems,"category");
   const flowData={
     "Entrada Fixa":sum("Entrada Fixa"),
     "Entrada Variável":sum("Entrada Variável"),
@@ -1013,7 +1074,7 @@ function renderCharts(){
     "Custo Fixo":sum("Custo Fixo"),
     "Custo Variável":sum("Custo Variável")
   };
-  function sum(type){return items.filter(x=>x.type===type).reduce((s,x)=>s+Number(x.amount||0),0)}
+  function sum(type){return scopeItems.filter(x=>x.type===type).reduce((s,x)=>s+Number(x.amount||0),0)}
   if(categoryChart)categoryChart.destroy();
   if(flowChart)flowChart.destroy();
   categoryChart=new Chart(catCanvas,{type:"bar",data:{labels:Object.keys(byCategory).length?Object.keys(byCategory):["Sem dados"],datasets:[{label:"Fluxo",data:Object.values(byCategory).length?Object.values(byCategory):[0]}]},options:{responsive:true,plugins:{legend:{display:false}}}});
@@ -1516,6 +1577,7 @@ function safe(str){return String(str??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<
 renderUserUI(null);
 renderCompanyName();
 clearForm();
+setCurrentMonth();
 render();
 </script>
 </body>
