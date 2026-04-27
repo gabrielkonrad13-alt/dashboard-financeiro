@@ -111,6 +111,10 @@
     .editModalGrid .full{grid-column:1/-1}
     .modalWide{width:min(920px,100%)}
     @media(max-width:800px){.editModalGrid{grid-template-columns:1fr}}
+  
+    .shortDesc{cursor:pointer;color:var(--text);font-weight:800;text-decoration:none}
+    .shortDesc:hover{color:var(--green);text-decoration:underline}
+    .viewTextBox{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:14px;padding:14px;line-height:1.5;white-space:pre-wrap}
   </style>
 </head>
 <body>
@@ -558,6 +562,19 @@
         <button class="primary" onclick="saveTransactionEdit()">Salvar alterações</button>
         <button class="success" onclick="markPaidFromModal()">Confirmar pago</button>
         <button class="danger" onclick="deleteFromModal()">Excluir lançamento</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewDescriptionModal" class="modalOverlay">
+    <div class="modal">
+      <div class="modalHeader">
+        <h2>Detalhes do lançamento</h2>
+        <button class="secondary" onclick="closeDescriptionModal()">Fechar</button>
+      </div>
+      <div class="viewTextBox" id="viewDescriptionContent"></div>
+      <div class="btns">
+        <button class="primary" id="viewDescriptionEditBtn">Editar lançamento</button>
       </div>
     </div>
   </div>
@@ -1232,6 +1249,62 @@ function flashSaved(el){
 }
 
 
+
+function formatShortDate(value){
+  const raw = String(value || "");
+  if(!raw) return "-";
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m) return `${m[3]}/${m[2]}/${m[1].slice(2)}`;
+  const parts = raw.split(/[\/\-]/);
+  if(parts.length === 3){
+    if(parts[0].length === 4) return `${parts[2].padStart(2,"0")}/${parts[1].padStart(2,"0")}/${parts[0].slice(2)}`;
+    return `${parts[0].padStart(2,"0")}/${parts[1].padStart(2,"0")}/${parts[2].slice(-2)}`;
+  }
+  return raw;
+}
+
+function shortDescription(text){
+  const clean = String(text || "").trim();
+  if(!clean) return "-";
+  const separators = [" - ", " Cobrança ", " Cobranca ", " Gestão ", " Gestao ", " Mensalidade "];
+  for(const sep of separators){
+    const idx = clean.indexOf(sep);
+    if(idx > 0) return clean.slice(0, idx).trim();
+  }
+  const words = clean.split(/\s+/);
+  return words.slice(0, Math.min(2, words.length)).join(" ");
+}
+
+function openDescriptionModal(id){
+  const item = items.find(x => x.id === id);
+  if(!item) return;
+
+  const content = [
+    `Descrição: ${item.description || "-"}`,
+    `Tipo: ${item.type || "-"}`,
+    `Categoria: ${item.category || "-"}`,
+    `Status: ${item.paymentStatus || "-"}`,
+    `Pagamento: ${item.paymentMethod || "-"}`,
+    `Data: ${formatShortDate(item.date)}`,
+    `Vencimento: ${formatShortDate(item.dueDate)}`,
+    `Previsão caixa: ${formatShortDate(item.expectedDate)}`,
+    `Valor: ${brl(item.amount)}`,
+    item.notes ? `Observação: ${item.notes}` : ""
+  ].filter(Boolean).join("\\n");
+
+  document.getElementById("viewDescriptionContent").textContent = content;
+  document.getElementById("viewDescriptionEditBtn").onclick = () => {
+    closeDescriptionModal();
+    openTransactionModal(id);
+  };
+  document.getElementById("viewDescriptionModal").classList.add("active");
+}
+
+function closeDescriptionModal(){
+  document.getElementById("viewDescriptionModal").classList.remove("active");
+}
+
+
 function renderMainTable(){
   const tbody=document.getElementById("records");
   const mobile=document.getElementById("geralMobile");
@@ -1244,10 +1317,13 @@ function renderMainTable(){
   }
   items.forEach(item=>{
     tbody.innerHTML+=`<tr>
-      <td>${safe(item.date || "-")}</td>
-      <td>${safe(item.dueDate || "-")}</td>
-      <td>${safe(item.expectedDate || "-")}</td>
-      <td class="descRead">${safe(item.description)} ${item.installment?`<span class="pill">${safe(item.installment)}</span>`:""}</td>
+      <td title="${safe(item.date || "-")}">${formatShortDate(item.date)}</td>
+      <td title="${safe(item.dueDate || "-")}">${formatShortDate(item.dueDate)}</td>
+      <td title="${safe(item.expectedDate || "-")}">${formatShortDate(item.expectedDate)}</td>
+      <td class="descRead">
+        <span class="shortDesc" title="${safe(item.description || "-")}" onclick="openDescriptionModal('${item.id}')">${safe(shortDescription(item.description))}</span>
+        ${item.installment?`<span class="pill">${safe(item.installment)}</span>`:""}
+      </td>
       <td><span class="pill">${safe(item.type)}</span></td>
       <td>${safe(item.category || "-")}</td>
       <td>${safe(item.paymentStatus || "-")}</td>
@@ -1279,11 +1355,11 @@ function renderSplitRecords(){
   sm.innerHTML=saidas.length?"":'<div class="empty">Nenhuma conta ou saída registrada.</div>';
 
   entradas.forEach(item=>{
-    eb.innerHTML+=`<tr><td>${safe(item.expectedDate||item.dueDate||item.date)}</td><td>${safe(item.description)} ${item.installment?`<span class="pill">${item.installment}</span>`:""}</td><td><span class="pill">${safe(item.type)}</span></td><td>${safe(item.paymentStatus||"")}</td><td class="positive">${brl(item.amount)}</td><td>${actionBtn(item)}</td></tr>`;
+    eb.innerHTML+=`<tr><td title="${safe(item.expectedDate||item.dueDate||item.date)}">${formatShortDate(item.expectedDate||item.dueDate||item.date)}</td><td><span class="shortDesc" title="${safe(item.description)}" onclick="openDescriptionModal('${item.id}')">${safe(shortDescription(item.description))}</span> ${item.installment?`<span class="pill">${item.installment}</span>`:""}</td><td><span class="pill">${safe(item.type)}</span></td><td>${safe(item.paymentStatus||"")}</td><td class="positive">${brl(item.amount)}</td><td>${actionBtn(item)}</td></tr>`;
     em.innerHTML += mobileCard(item);
   });
   saidas.forEach(item=>{
-    sb.innerHTML+=`<tr><td>${safe(item.dueDate||item.date)}</td><td>${safe(item.description)} ${item.installment?`<span class="pill">${item.installment}</span>`:""}</td><td><span class="pill">${safe(item.type)}</span></td><td>${safe(item.paymentStatus||"")}</td><td class="negative">${brl(item.amount)}</td><td>${actionBtn(item)}</td></tr>`;
+    sb.innerHTML+=`<tr><td title="${safe(item.dueDate||item.date)}">${formatShortDate(item.dueDate||item.date)}</td><td><span class="shortDesc" title="${safe(item.description)}" onclick="openDescriptionModal('${item.id}')">${safe(shortDescription(item.description))}</span> ${item.installment?`<span class="pill">${item.installment}</span>`:""}</td><td><span class="pill">${safe(item.type)}</span></td><td>${safe(item.paymentStatus||"")}</td><td class="negative">${brl(item.amount)}</td><td>${actionBtn(item)}</td></tr>`;
     sm.innerHTML += mobileCard(item);
   });
 }
