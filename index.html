@@ -98,6 +98,11 @@
     .miniTable td,.miniTable th{padding:10px;border-bottom:1px solid var(--line)}
     .addCompanyBox{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:10px}
     @media(max-width:900px){.comparisonHero{grid-template-columns:1fr}}
+  
+    .quickTypeBtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .quickChip{padding:7px 9px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--muted);font-size:11px;border:1px solid var(--line)}
+    .quickChip:hover{color:var(--text);background:rgba(22,199,168,.14)}
+    .costHelp{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.18);padding:12px;border-radius:12px;color:var(--muted);font-size:13px;margin-top:12px}
   </style>
 </head>
 <body>
@@ -195,7 +200,22 @@
         <div><label>Vencimento</label><input id="dueDate" type="date" onchange="updateExpectedDate()"/></div>
         <div><label>Data prevista no caixa</label><input id="expectedDate" type="date"/></div>
         <div class="full"><label>Descrição</label><input id="description" placeholder="Ex: Cliente X, aluguel, ferramenta, conta..."/></div>
-        <div><label>Tipo</label><select id="type"><option>Entrada Fixa</option><option>Entrada Variável</option><option>Saída</option><option>Custo Fixo</option><option>Custo Variável</option><option>Retirada da Empresa</option></select></div>
+        <div>
+  <label>Tipo de lançamento</label>
+  <select id="type" onchange="applyTypePreset()">
+    <option>Entrada Fixa</option>
+    <option>Entrada Variável</option>
+    <option>Saída</option>
+    <option>Custo Fixo</option>
+    <option>Custo Variável</option>
+    <option>Retirada da Empresa</option>
+  </select>
+  <div class="quickTypeBtns">
+    <button type="button" class="quickChip" onclick="setQuickType('Custo Fixo')">+ Custo fixo</button>
+    <button type="button" class="quickChip" onclick="setQuickType('Custo Variável')">+ Custo variável</button>
+    <button type="button" class="quickChip" onclick="setQuickType('Saída')">+ Conta/saída</button>
+  </div>
+</div>
         <div><label>Valor</label><input id="amount" type="number" step="0.01" placeholder="0,00"/></div>
         <div><label>Categoria</label><input id="category" placeholder="Cliente, tráfego, aluguel, alimentação..."/></div>
         <div><label>Status</label><select id="paymentStatus"><option>Pendente</option><option>Previsto</option><option>Pago/Recebido</option><option>Atrasado</option></select></div>
@@ -206,6 +226,10 @@
         <div class="full">
           <p class="hint" id="recurrenceHint">Pagamento único: será criado apenas 1 lançamento.</p>
           <p class="hint">Boleto: a data prevista no caixa é calculada automaticamente considerando compensação e fim de semana. Ex: vencendo sexta, previsão cai na segunda.</p>
+          <div class="costHelp">
+            Para registrar custos, escolha <strong>Custo Fixo</strong> para despesas recorrentes como ferramentas, aluguel, internet e salários.
+            Escolha <strong>Custo Variável</strong> para gastos pontuais como freelancers, compras, produção, deslocamento e demandas específicas.
+          </div>
         </div>
         <div class="full"><label>Observação</label><textarea id="notes" placeholder="Detalhes, contrato, responsável, motivo, etc."></textarea></div>
       </div>
@@ -700,6 +724,44 @@ function toggleRecurrenceHint(){
   } else {
     document.getElementById("recurrenceHint").textContent = "Recorrente: o sistema criará automaticamente lançamentos futuros conforme a quantidade informada.";
   }
+}
+
+
+function setQuickType(type){
+  document.getElementById("type").value = type;
+  applyTypePreset();
+}
+
+function applyTypePreset(){
+  const type = document.getElementById("type").value;
+  const category = document.getElementById("category");
+  const recurrence = document.getElementById("recurrence");
+  const paymentStatus = document.getElementById("paymentStatus");
+
+  if(type === "Custo Fixo"){
+    if(!category.value) category.value = "Custo fixo";
+    recurrence.value = "Mensal";
+    paymentStatus.value = "Pendente";
+  }
+
+  if(type === "Custo Variável"){
+    if(!category.value) category.value = "Custo variável";
+    recurrence.value = "Não recorrente";
+    paymentStatus.value = "Pendente";
+  }
+
+  if(type === "Saída"){
+    if(!category.value) category.value = "Conta / despesa";
+    paymentStatus.value = "Pendente";
+  }
+
+  if(type === "Retirada da Empresa"){
+    if(!category.value) category.value = "Retirada do sócio";
+    recurrence.value = "Não recorrente";
+    paymentStatus.value = "Pago/Recebido";
+  }
+
+  toggleRecurrenceHint();
 }
 
 async function addItem(){
