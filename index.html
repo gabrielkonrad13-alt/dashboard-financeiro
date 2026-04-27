@@ -167,12 +167,14 @@
     <div class="grid2">
       <div class="panel">
         <div class="toolbar"><h2>Entradas</h2><span id="entradasCount" class="status">0 registros</span></div>
-        <div class="desktopTable" style="overflow:auto"><table><thead><tr><th>Previsto</th><th>Descrição</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Ação</th></tr></thead><tbody id="entradasRecords"></tbody></table></div>
+        <p class="hint">Clique nos textos para editar. Campos de tipo, status e pagamento têm seletor automático.</p>
+        <div class="desktopTable" style="overflow:auto"><table><thead><tr><th>Previsto</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Status</th><th>Pagamento</th><th>Valor</th><th>Ação</th></tr></thead><tbody id="entradasRecords"></tbody></table></div>
         <div id="entradasMobile" class="mobileList"></div>
       </div>
       <div class="panel">
         <div class="toolbar"><h2>Contas / Saídas</h2><span id="saidasCount" class="status">0 registros</span></div>
-        <div class="desktopTable" style="overflow:auto"><table><thead><tr><th>Venc.</th><th>Descrição</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Ação</th></tr></thead><tbody id="saidasRecords"></tbody></table></div>
+        <p class="hint">Clique nos textos para editar. Campos de tipo, status e pagamento têm seletor automático.</p>
+        <div class="desktopTable" style="overflow:auto"><table><thead><tr><th>Venc.</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Status</th><th>Pagamento</th><th>Valor</th><th>Ação</th></tr></thead><tbody id="saidasRecords"></tbody></table></div>
         <div id="saidasMobile" class="mobileList"></div>
       </div>
     </div>
@@ -377,8 +379,18 @@ async function addItem(){
 
 async function updateItem(id,field,value){
   if(!user)return;
-  const parsed=field==="amount"?Number(String(value).replace(",",".").replace(/[^\d.-]/g,"")) || 0:value;
-  await collectionRef().doc(id).update({[field]:parsed});
+  const item = items.find(x => x.id === id);
+  const parsed=field==="amount"?Number(String(value).replace(",",".").replace(/[^\d.-]/g,"")) || 0:String(value).trim();
+
+  const update = {[field]:parsed, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
+
+  if(item && (field === "dueDate" || field === "paymentMethod")){
+    const due = field === "dueDate" ? parsed : (item.dueDate || item.date);
+    const method = field === "paymentMethod" ? parsed : (item.paymentMethod || "Pix");
+    update.expectedDate = calculateExpectedDate(due, method);
+  }
+
+  await collectionRef().doc(id).update(update);
 }
 async function markPaid(id){
   if(!user)return;
@@ -466,6 +478,22 @@ function renderMainTable(){
   });
 }
 
+
+function editableSelect(id, field, current, options){
+  return `<select onchange="updateItem('${id}','${field}',this.value)" style="min-width:150px">
+    ${options.map(opt => `<option value="${safe(opt)}" ${opt === current ? "selected" : ""}>${safe(opt)}</option>`).join("")}
+  </select>`;
+}
+
+function editableText(id, field, value){
+  return `contenteditable="true" onblur="updateItem('${id}','${field}',this.textContent)"`;
+}
+
+const TYPE_OPTIONS = ["Entrada Fixa","Entrada Variável","Saída","Custo Fixo","Custo Variável"];
+const STATUS_OPTIONS = ["Pendente","Previsto","Pago/Recebido","Atrasado"];
+const PAYMENT_OPTIONS = ["Pix","Boleto","Transferência","Cartão de crédito","Cartão de débito","Dinheiro","Outro"];
+
+
 function renderSplitRecords(){
   const entradas=items.filter(x=>isEntrada(x.type));
   const saidas=items.filter(x=>!isEntrada(x.type));
@@ -482,11 +510,29 @@ function renderSplitRecords(){
   sm.innerHTML=saidas.length?"":'<div class="empty">Nenhuma conta ou saída registrada.</div>';
 
   entradas.forEach(item=>{
-    eb.innerHTML+=`<tr><td>${safe(item.expectedDate||item.dueDate||item.date)}</td><td>${safe(item.description)} ${item.installment?`<span class="pill">${item.installment}</span>`:""}</td><td><span class="pill">${safe(item.type)}</span></td><td>${safe(item.paymentStatus||"")}</td><td class="positive">${brl(item.amount)}</td><td>${actionBtn(item)}</td></tr>`;
+    eb.innerHTML+=`<tr>
+      <td ${editableText(item.id,'expectedDate',item.expectedDate||item.dueDate||item.date)}>${safe(item.expectedDate||item.dueDate||item.date)}</td>
+      <td ${editableText(item.id,'description',item.description)}>${safe(item.description)} ${item.installment?`<span class="pill">${item.installment}</span>`:""}</td>
+      <td>${editableSelect(item.id,'type',item.type,TYPE_OPTIONS)}</td>
+      <td ${editableText(item.id,'category',item.category)}>${safe(item.category||"")}</td>
+      <td>${editableSelect(item.id,'paymentStatus',item.paymentStatus||"Pendente",STATUS_OPTIONS)}</td>
+      <td>${editableSelect(item.id,'paymentMethod',item.paymentMethod||"Pix",PAYMENT_OPTIONS)}</td>
+      <td class="positive" ${editableText(item.id,'amount',item.amount)}>${brl(item.amount)}</td>
+      <td>${actionBtn(item)} <button class="danger smallBtn" onclick="removeItem('${item.id}')">Excluir</button></td>
+    </tr>`;
     em.innerHTML += mobileCard(item);
   });
   saidas.forEach(item=>{
-    sb.innerHTML+=`<tr><td>${safe(item.dueDate||item.date)}</td><td>${safe(item.description)} ${item.installment?`<span class="pill">${item.installment}</span>`:""}</td><td><span class="pill">${safe(item.type)}</span></td><td>${safe(item.paymentStatus||"")}</td><td class="negative">${brl(item.amount)}</td><td>${actionBtn(item)}</td></tr>`;
+    sb.innerHTML+=`<tr>
+      <td ${editableText(item.id,'dueDate',item.dueDate||item.date)}>${safe(item.dueDate||item.date)}</td>
+      <td ${editableText(item.id,'description',item.description)}>${safe(item.description)} ${item.installment?`<span class="pill">${item.installment}</span>`:""}</td>
+      <td>${editableSelect(item.id,'type',item.type,TYPE_OPTIONS)}</td>
+      <td ${editableText(item.id,'category',item.category)}>${safe(item.category||"")}</td>
+      <td>${editableSelect(item.id,'paymentStatus',item.paymentStatus||"Pendente",STATUS_OPTIONS)}</td>
+      <td>${editableSelect(item.id,'paymentMethod',item.paymentMethod||"Pix",PAYMENT_OPTIONS)}</td>
+      <td class="negative" ${editableText(item.id,'amount',item.amount)}>${brl(item.amount)}</td>
+      <td>${actionBtn(item)} <button class="danger smallBtn" onclick="removeItem('${item.id}')">Excluir</button></td>
+    </tr>`;
     sm.innerHTML += mobileCard(item);
   });
 }
