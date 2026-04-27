@@ -103,6 +103,14 @@
     .quickChip{padding:7px 9px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--muted);font-size:11px;border:1px solid var(--line)}
     .quickChip:hover{color:var(--text);background:rgba(22,199,168,.14)}
     .costHelp{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.18);padding:12px;border-radius:12px;color:var(--muted);font-size:13px;margin-top:12px}
+  
+    .cleanTable{min-width:1100px}
+    .cleanTable td,.cleanTable th{white-space:nowrap}
+    .cleanTable .descRead{white-space:normal;min-width:260px}
+    .editModalGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .editModalGrid .full{grid-column:1/-1}
+    .modalWide{width:min(920px,100%)}
+    @media(max-width:800px){.editModalGrid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -443,6 +451,113 @@
       <div class="btns">
         <button class="primary" onclick="saveProfile()">Salvar perfil</button>
         <button class="secondary" onclick="resetProfilePhoto()">Usar foto do Google</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="transactionModal" class="modalOverlay">
+    <div class="modal modalWide">
+      <div class="modalHeader">
+        <h2>Editar lançamento</h2>
+        <button class="secondary" onclick="closeTransactionModal()">Fechar</button>
+      </div>
+
+      <input type="hidden" id="editId">
+
+      <div class="editModalGrid">
+        <div>
+          <label>Data</label>
+          <input id="editDate" type="date">
+        </div>
+        <div>
+          <label>Vencimento</label>
+          <input id="editDueDate" type="date" onchange="updateEditExpectedDate()">
+        </div>
+        <div>
+          <label>Previsão caixa</label>
+          <input id="editExpectedDate" type="date">
+        </div>
+
+        <div class="full">
+          <label>Descrição</label>
+          <input id="editDescription">
+        </div>
+
+        <div>
+          <label>Tipo</label>
+          <select id="editType">
+            <option>Entrada Fixa</option>
+            <option>Entrada Variável</option>
+            <option>Saída</option>
+            <option>Custo Fixo</option>
+            <option>Custo Variável</option>
+            <option>Retirada da Empresa</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Categoria</label>
+          <input id="editCategory">
+        </div>
+
+        <div>
+          <label>Status</label>
+          <select id="editPaymentStatus">
+            <option>Pendente</option>
+            <option>Previsto</option>
+            <option>Pago/Recebido</option>
+            <option>Atrasado</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Pagamento</label>
+          <select id="editPaymentMethod" onchange="updateEditExpectedDate()">
+            <option>Pix</option>
+            <option>Boleto</option>
+            <option>Transferência</option>
+            <option>Cartão de crédito</option>
+            <option>Cartão de débito</option>
+            <option>Dinheiro</option>
+            <option>Outro</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Recorrência</label>
+          <select id="editRecurrence">
+            <option>Não recorrente</option>
+            <option>Mensal</option>
+            <option>Semanal</option>
+            <option>Anual</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Responsável</label>
+          <input id="editOwner">
+        </div>
+
+        <div>
+          <label>Valor</label>
+          <input id="editAmount" type="number" step="0.01">
+        </div>
+
+        <div>
+          <label>Parcela</label>
+          <input id="editInstallment" disabled>
+        </div>
+
+        <div class="full">
+          <label>Observação</label>
+          <textarea id="editNotes"></textarea>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button class="primary" onclick="saveTransactionEdit()">Salvar alterações</button>
+        <button class="success" onclick="markPaidFromModal()">Confirmar pago</button>
+        <button class="danger" onclick="deleteFromModal()">Excluir lançamento</button>
       </div>
     </div>
   </div>
@@ -854,6 +969,89 @@ async function addItem(){
   alert(count === 1 ? "Lançamento criado." : `${count} lançamentos recorrentes criados.`);
 }
 
+
+function openTransactionModal(id){
+  const item = items.find(x => x.id === id);
+  if(!item) return alert("Lançamento não encontrado.");
+
+  document.getElementById("editId").value = id;
+  document.getElementById("editDate").value = item.date || "";
+  document.getElementById("editDueDate").value = item.dueDate || "";
+  document.getElementById("editExpectedDate").value = item.expectedDate || "";
+  document.getElementById("editDescription").value = item.description || "";
+  document.getElementById("editType").value = item.type || "Entrada Variável";
+  document.getElementById("editCategory").value = item.category || "";
+  document.getElementById("editPaymentStatus").value = item.paymentStatus || "Pendente";
+  document.getElementById("editPaymentMethod").value = item.paymentMethod || "Pix";
+  document.getElementById("editRecurrence").value = item.recurrence || "Não recorrente";
+  document.getElementById("editOwner").value = item.owner || "";
+  document.getElementById("editAmount").value = Number(item.amount || 0);
+  document.getElementById("editInstallment").value = item.installment || "";
+  document.getElementById("editNotes").value = item.notes || "";
+
+  document.getElementById("transactionModal").classList.add("active");
+}
+
+function closeTransactionModal(){
+  document.getElementById("transactionModal").classList.remove("active");
+}
+
+function updateEditExpectedDate(){
+  const due = document.getElementById("editDueDate").value || document.getElementById("editDate").value;
+  const method = document.getElementById("editPaymentMethod").value;
+  document.getElementById("editExpectedDate").value = calculateExpectedDate(due, method);
+}
+
+async function saveTransactionEdit(){
+  if(!user) return;
+  const id = document.getElementById("editId").value;
+  const item = items.find(x => x.id === id);
+  if(!item) return alert("Lançamento não encontrado.");
+
+  const dueDate = document.getElementById("editDueDate").value || document.getElementById("editDate").value;
+  const paymentMethod = document.getElementById("editPaymentMethod").value;
+  const expectedDate = document.getElementById("editExpectedDate").value || calculateExpectedDate(dueDate, paymentMethod);
+
+  const update = {
+    date: document.getElementById("editDate").value,
+    dueDate,
+    expectedDate,
+    description: document.getElementById("editDescription").value.trim(),
+    type: document.getElementById("editType").value,
+    category: document.getElementById("editCategory").value.trim() || "Sem categoria",
+    paymentStatus: document.getElementById("editPaymentStatus").value,
+    paymentMethod,
+    recurrence: document.getElementById("editRecurrence").value,
+    owner: document.getElementById("editOwner").value.trim(),
+    amount: Number(document.getElementById("editAmount").value || 0),
+    notes: document.getElementById("editNotes").value.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  Object.assign(item, update);
+  await collectionRef().doc(id).update(update);
+  closeTransactionModal();
+  render();
+
+  const activeSection = document.querySelector(".section.active");
+  if(activeSection && activeSection.id === "comparativo") renderComparison();
+}
+
+async function markPaidFromModal(){
+  const id = document.getElementById("editId").value;
+  await markPaid(id);
+  closeTransactionModal();
+  render();
+}
+
+async function deleteFromModal(){
+  const id = document.getElementById("editId").value;
+  await removeItem(id);
+  closeTransactionModal();
+  render();
+}
+
+
 async function updateItem(id,field,value,el=null){
   if(!user)return;
 
@@ -900,14 +1098,23 @@ async function updateItem(id,field,value,el=null){
 }
 async function markPaid(id){
   if(!user)return;
-  await collectionRef().doc(id).update({
+  const item = items.find(x => x.id === id);
+  const update = {
     paymentStatus:"Pago/Recebido",
-    paidAt:new Date().toISOString().slice(0,10)
-  });
+    paidAt:new Date().toISOString().slice(0,10),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if(item) Object.assign(item, update);
+  await collectionRef().doc(id).update(update);
+  render();
 }
 async function removeItem(id){
   if(!user)return;
-  if(confirm("Excluir este lançamento?")) await collectionRef().doc(id).delete();
+  if(confirm("Excluir este lançamento?")) {
+    await collectionRef().doc(id).delete();
+    items = items.filter(x => x.id !== id);
+    render();
+  }
 }
 function clearForm(){
   ["description","amount","category","notes","owner","dueDate","expectedDate"].forEach(id=>document.getElementById(id).value="");
@@ -1031,27 +1238,26 @@ function renderMainTable(){
   tbody.innerHTML="";
   mobile.innerHTML="";
   if(!items.length){
-    tbody.innerHTML='<tr><td colspan="15" class="empty">Nenhum lançamento ainda.</td></tr>';
+    tbody.innerHTML='<tr><td colspan="11" class="empty">Nenhum lançamento ainda.</td></tr>';
     mobile.innerHTML='<div class="empty">Nenhum lançamento ainda.</div>';
     return;
   }
   items.forEach(item=>{
     tbody.innerHTML+=`<tr>
-      <td>${inputCell(item.id,'date',item.date,'date')}</td>
-      <td>${inputCell(item.id,'dueDate',item.dueDate||'','date')}</td>
-      <td>${inputCell(item.id,'expectedDate',item.expectedDate||'','date')}</td>
-      <td class="descCell">${textAreaCell(item.id,'description',item.description)}</td>
-      <td>${selectCell(item.id,'type',item.type,TYPE_OPTIONS)}</td>
-      <td>${inputCell(item.id,'category',item.category||'')}</td>
-      <td>${selectCell(item.id,'paymentStatus',item.paymentStatus||'Pendente',STATUS_OPTIONS)}</td>
-      <td>${selectCell(item.id,'paymentMethod',item.paymentMethod||'Pix',PAYMENT_OPTIONS)}</td>
-      <td>${selectCell(item.id,'recurrence',item.recurrence||'Não recorrente',RECURRENCE_OPTIONS)}</td>
-      <td><span class="pill">${safe(item.installment||'-')}</span></td>
-      <td>${inputCell(item.id,'owner',item.owner||'')}</td>
-      <td>${inputCell(item.id,'amount',item.amount,'number')}</td>
-      <td class="notesCell">${textAreaCell(item.id,'notes',item.notes||'')}</td>
-      <td>${actionBtn(item)}</td>
-      <td><button class="danger smallBtn" onclick="removeItem('${item.id}')">Excluir</button></td>
+      <td>${safe(item.date || "-")}</td>
+      <td>${safe(item.dueDate || "-")}</td>
+      <td>${safe(item.expectedDate || "-")}</td>
+      <td class="descRead">${safe(item.description)} ${item.installment?`<span class="pill">${safe(item.installment)}</span>`:""}</td>
+      <td><span class="pill">${safe(item.type)}</span></td>
+      <td>${safe(item.category || "-")}</td>
+      <td>${safe(item.paymentStatus || "-")}</td>
+      <td>${safe(item.paymentMethod || "-")}</td>
+      <td><span class="pill">${safe(item.installment || "-")}</span></td>
+      <td class="${isEntrada(item.type) ? 'positive':'negative'}">${brl(item.amount)}</td>
+      <td>
+        <button class="secondary smallBtn" onclick="openTransactionModal('${item.id}')">Editar</button>
+        ${actionBtn(item)}
+      </td>
     </tr>`;
     mobile.innerHTML += mobileCard(item);
   });
