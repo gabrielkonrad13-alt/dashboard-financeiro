@@ -3,70 +3,157 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard Financeiro | Mídia Growth</title>
+  <title>Finance Control | Dashboard Financeiro</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root{
-      --bg:#070b16;--panel:#101827;--panel2:#162033;--line:rgba(255,255,255,.10);
-      --text:#f8fafc;--muted:#94a3b8;--green:#22c55e;--red:#ef4444;--blue:#38bdf8;--yellow:#f59e0b;--purple:#8b5cf6;
+      --bg:#171b22;--sidebar:rgba(10,14,25,.92);--panel:rgba(28,33,46,.82);--panel2:rgba(35,42,58,.88);--line:rgba(255,255,255,.09);
+      --text:#f3f6fb;--muted:#8f9aaa;--green:#16c7a8;--red:#ff6b4a;--blue:#38bdf8;--yellow:#f59e0b;--purple:#8b5cf6;
       --radius:18px;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Arial,sans-serif;background:radial-gradient(circle at top left,rgba(56,189,248,.12),transparent 34%),var(--bg);color:var(--text)}
-    .app{max-width:1320px;margin:auto;padding:26px}
+    body{margin:0;font-family:Inter,Arial,sans-serif;background:radial-gradient(circle at top left,rgba(22,199,168,.16),transparent 28%),radial-gradient(circle at top right,rgba(139,92,246,.16),transparent 28%),var(--bg);color:var(--text)}
+    .app{display:grid;grid-template-columns:250px 1fr;min-height:100vh;max-width:none;padding:0;margin:0}
+    .sidebar{background:var(--sidebar);backdrop-filter:blur(18px);border-right:1px solid var(--line);padding:22px 16px;position:sticky;top:0;height:100vh;overflow:auto}
+    .brand{font-size:22px;font-weight:900;line-height:1;letter-spacing:-.04em;margin-bottom:22px}
+    .brand span{color:var(--green)}
+    .sideLabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:22px 10px 8px}
+    .navTabs{display:flex;flex-direction:column;gap:6px;background:transparent;border:0;padding:0;width:100%}
+    .navTab{width:100%;text-align:left;background:transparent;color:var(--muted);border-radius:8px;padding:12px 14px}
+    .navTab.active{background:rgba(22,199,168,.14);color:var(--green);border-left:3px solid var(--green)}
+    .profileTabs{display:flex;flex-direction:column;gap:6px;background:transparent;border:0;padding:0;width:100%}
+    .tab{width:100%;text-align:left;background:transparent;color:var(--muted);border-radius:8px;padding:12px 14px}
+    .tab.active{background:linear-gradient(135deg,rgba(22,199,168,.18),rgba(139,92,246,.16));color:var(--text);border:1px solid rgba(255,255,255,.10)}
+    .main{padding:28px;overflow:hidden}
     header{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:18px}
-    h1{margin:0;font-size:32px;letter-spacing:-.04em}.subtitle{color:var(--muted);margin:8px 0 0}
-    button{border:0;border-radius:14px;padding:12px 14px;color:white;font-weight:800;cursor:pointer}
-    .primary{background:linear-gradient(135deg,#2563eb,#7c3aed)}.secondary{background:#334155}.danger{background:#b91c1c}.success{background:#15803d}.smallBtn{padding:8px 10px;border-radius:10px;font-size:12px}
-    .profileTabs,.navTabs{display:flex;gap:8px;background:rgba(255,255,255,.06);padding:8px;border-radius:999px;border:1px solid var(--line);width:max-content}
-    .tab,.navTab{background:transparent;color:var(--muted);border-radius:999px}.tab.active,.navTab.active{background:white;color:#020617}
-    .auth,.panel,.card,.mobileCard{background:rgba(16,24,39,.92);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 20px 50px rgba(0,0,0,.24)}
-    .auth{padding:16px;display:grid;grid-template-columns:1fr 1fr auto auto auto auto;gap:10px;align-items:end;margin-bottom:16px}
+    h1{margin:0;font-size:30px;letter-spacing:-.04em}.subtitle{color:var(--muted);margin:8px 0 0}
+    button{border:0;border-radius:8px;padding:11px 13px;color:white;font-weight:800;cursor:pointer}
+    .primary{background:linear-gradient(135deg,var(--green),#6ee7b7);color:#07110f}.secondary{background:#313946}.danger{background:#b93b31}.success{background:#15803d}.smallBtn{padding:8px 10px;border-radius:8px;font-size:12px}
+    .auth,.panel,.card,.mobileCard{background:var(--panel);backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 20px 60px rgba(0,0,0,.18)}
+    .auth{padding:16px;display:grid;grid-template-columns:1fr 1fr auto auto auto auto;gap:10px;align-items:end;margin-bottom:18px}
     label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase;margin:12px 0 6px;letter-spacing:.04em}
-    input,select,textarea{width:100%;border:1px solid var(--line);background:#0f172a;color:var(--text);padding:12px;border-radius:12px;outline:none}
+    input,select,textarea{width:100%;border:1px solid var(--line);background:#171c24;color:var(--text);padding:11px;border-radius:8px;outline:none}
     textarea{min-height:72px;resize:vertical}.status{font-size:13px;color:var(--muted)}
     .section{display:none}.section.active{display:block}
-    .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-    .card{padding:18px}.card small{color:var(--muted);font-weight:800;text-transform:uppercase;font-size:11px}.card strong{display:block;font-size:25px;margin-top:10px;letter-spacing:-.04em}
+    .grid4{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:16px;margin:18px 0}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .card{padding:22px;min-height:122px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}.card:before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.06),transparent 40%);pointer-events:none}
+    .card small{color:var(--muted);font-weight:800;text-transform:uppercase;font-size:11px}
+    .card strong{display:block;font-size:27px;margin-top:12px;letter-spacing:-.04em}
     .positive{color:var(--green)}.negative{color:var(--red)}.info{color:var(--blue)}.warning{color:var(--yellow)}
-    .panel{padding:18px;margin-bottom:14px}.panel h2{margin:0 0 14px;font-size:19px}.panel h3{margin:0 0 10px;font-size:16px;color:var(--muted)}
-    .formGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.full{grid-column:1/-1}
+    .panel{padding:20px;margin-bottom:16px}.panel h2{margin:0 0 14px;font-size:19px}.panel h3{margin:0 0 10px;font-size:16px;color:var(--muted)}
+    .formGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.full{grid-column:1/-1}
     .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-    table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-    th{color:var(--muted);font-size:11px;text-transform:uppercase;background:rgba(255,255,255,.04)}td[contenteditable=true]{background:rgba(255,255,255,.025);border-radius:8px;outline:none}
+    table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+    th{color:var(--muted);font-size:11px;text-transform:uppercase;background:rgba(255,255,255,.03)}td[contenteditable=true]{background:rgba(255,255,255,.025);border-radius:8px;outline:none}
     .pill{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(255,255,255,.08)}.empty{text-align:center;color:var(--muted);padding:28px}
-    .chartBox{min-height:290px}.toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
-    .wideTableWrap{overflow:auto;border:1px solid var(--line);border-radius:14px}
-    .wideTable{min-width:1450px}
-    .wideTable td,.wideTable th{white-space:nowrap}
-    .wideTable td.descCell,.wideTable td.notesCell{white-space:normal;min-width:260px}
-    .wideTable select{min-width:150px;padding:8px;border-radius:10px}
-    .wideTable input{min-width:130px;padding:8px;border-radius:10px}
-    .editHint{background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.18);padding:12px;border-radius:14px;margin:0 0 12px;color:var(--muted);font-size:13px}
-    .savedFlash{animation:savedFlash .75s ease}
-    @keyframes savedFlash{0%{background:rgba(34,197,94,.35)}100%{background:transparent}}
+    .chartBox{min-height:360px}.chartBox canvas{max-height:295px}.toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
     .hint{font-size:12px;color:var(--muted);line-height:1.4;margin-top:8px}.mobileList{display:none}.mobileCard{padding:14px;margin-bottom:12px}.mobileCardTop{display:flex;justify-content:space-between;gap:12px}.mobileCard p{margin:6px 0;color:var(--muted);font-size:13px}
     .overdue{border-left:4px solid var(--red)}.paid{border-left:4px solid var(--green)}.pending{border-left:4px solid var(--yellow)}
-    @media(max-width:980px){
-      header,.grid2,.grid3{display:block}.grid4,.formGrid,.auth{grid-template-columns:1fr}.profileTabs,.navTabs{width:100%;overflow:auto}.tab,.navTab{flex:1}.panel{margin-bottom:14px}
-      .desktopTable{display:none}.mobileList{display:block}.app{padding:16px}h1{font-size:26px}
-    }
+    .wideTableWrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:#191f27}
+    .wideTable{min-width:1450px}
+    .wideTable td,.wideTable th{white-space:nowrap}
+    .wideTable td.descCell,.wideTable td.notesCell{white-space:normal;min-width:280px}
+    .wideTable select{min-width:150px;padding:8px;border-radius:8px}
+    .wideTable input{min-width:130px;padding:8px;border-radius:8px}
+    .editHint{background:rgba(22,199,168,.08);border:1px solid rgba(22,199,168,.18);padding:12px;border-radius:10px;margin:0 0 12px;color:var(--muted);font-size:13px}
+    .savedFlash{animation:savedFlash .75s ease}
+    @keyframes savedFlash{0%{background:rgba(34,197,94,.35)}100%{background:transparent}}
+    .metricSub{font-size:12px;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+    @media(max-width:1100px){.app{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.main{padding:18px}.navTabs,.profileTabs{flex-direction:row;overflow:auto}.navTab,.tab{text-align:center;min-width:max-content}.grid2,.grid3{grid-template-columns:1fr}.grid4{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:700px){.grid4,.formGrid,.auth{grid-template-columns:1fr}.desktopTable{display:none}.mobileList{display:block}.app{padding:0}h1{font-size:26px}.main{padding:14px}}
+  
+    .userBox{display:flex;gap:12px;align-items:center;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:18px;padding:12px;margin-bottom:18px}
+    .avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;background:linear-gradient(135deg,var(--green),var(--purple));display:grid;place-items:center;font-weight:900;color:#07110f;flex:0 0 auto}
+    .userMeta{min-width:0}
+    .userMeta strong{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .userMeta span{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .companyBox{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:10px}
+    .companyBox input{margin-top:8px}
+    .companyBox button{width:100%;margin-top:8px}
+    .topUser{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:999px;padding:8px 12px}
+    .topUser .avatar{width:34px;height:34px;font-size:13px}
+    .topUser span{font-size:13px;color:var(--muted)}
+
+  
+    .modalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;z-index:9999;padding:18px}
+    .modalOverlay.active{display:flex}
+    .modal{width:min(760px,100%);background:var(--panel2);border:1px solid var(--line);border-radius:24px;padding:22px;box-shadow:0 30px 90px rgba(0,0,0,.45)}
+    .modalHeader{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px}
+    .modalHeader h2{margin:0}
+    .profilePreview{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:14px}
+    .profilePreview .avatar{width:64px;height:64px}
+    .sideButton{width:100%;text-align:left;background:rgba(255,255,255,.06);color:var(--text);margin-top:8px}
+
+  
+    .companyList{display:flex;flex-direction:column;gap:6px}
+    .companyActions{display:flex;gap:8px;margin-top:10px}
+    .companyActions button{flex:1}
+    .comparisonHero{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
+    .comparisonBig{font-size:42px!important}
+    .miniTable{width:100%;font-size:13px}
+    .miniTable td,.miniTable th{padding:10px;border-bottom:1px solid var(--line)}
+    .addCompanyBox{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:10px}
+    @media(max-width:900px){.comparisonHero{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
 <div class="app">
+  <aside class="sidebar">
+    <div class="brand">Finance<span>Control</span></div>
+
+    <div class="userBox">
+      <div id="userAvatar" class="avatar">?</div>
+      <div class="userMeta">
+        <strong id="userName">Usuário</strong>
+        <span id="userEmail">Desconectado</span>
+      </div>
+    </div>
+
+    <div class="sideLabel">Área</div>
+    <div id="profileTabs" class="profileTabs companyList"></div>
+
+    <div class="addCompanyBox">
+      <label>Adicionar empresa</label>
+      <input id="newCompanyName" placeholder="Nome da empresa">
+      <div class="companyActions">
+        <button class="secondary" onclick="addCompany()">Adicionar</button>
+      </div>
+    </div>
+
+    <div class="companyBox">
+      <label>Nome da empresa atual</label>
+      <input id="companyNameInput" placeholder="Empresa">
+      <button class="secondary" onclick="saveCompanyName()">Salvar nome</button>
+    </div>
+
+    <button class="sideButton" onclick="openProfileModal()">Editar perfil</button>
+
+    <div class="sideLabel">Menu</div>
+    <nav class="navTabs">
+      <button class="navTab active" onclick="setSection(event,'visao')">Dashboard</button>
+      <button class="navTab" onclick="setSection(event,'lancamentos')">Lançamentos</button>
+      <button class="navTab" onclick="setSection(event,'registros')">Registros</button>
+      <button class="navTab" onclick="setSection(event,'relatorios')">Relatórios</button>
+      <button class="navTab" onclick="setSection(event,'comparativo')">Comparativo</button>
+    </nav>
+
+    <div class="sideLabel">Sistema</div>
+    <p class="status">Dados salvos no Firebase em tempo real.</p>
+  </aside>
+
+  <main class="main">
   <header>
     <div>
-      <h1>Dashboard Financeiro</h1>
-      <p class="subtitle">Sistema financeiro online para Pessoal + Mídia Growth.</p>
+      <h1>Dashboard</h1>
+      <p class="subtitle">Gestão financeira empresarial e pessoal.</p>
     </div>
-    <div class="profileTabs">
-      <button class="tab active" onclick="setProfile('pessoal')">Pessoal</button>
-      <button class="tab" onclick="setProfile('midia')">Mídia Growth</button>
+    <div class="topUser">
+      <div id="topAvatar" class="avatar">?</div>
+      <span id="topUserLabel">Faça login</span>
     </div>
   </header>
 
@@ -80,19 +167,13 @@
     <div class="status" id="status" style="grid-column:1/-1">Faça login para salvar na nuvem.</div>
   </section>
 
-  <nav class="navTabs">
-    <button class="navTab active" onclick="setSection(event,'visao')">Visão Geral</button>
-    <button class="navTab" onclick="setSection(event,'lancamentos')">Lançamentos</button>
-    <button class="navTab" onclick="setSection(event,'registros')">Registros</button>
-    <button class="navTab" onclick="setSection(event,'relatorios')">Relatórios</button>
-  </nav>
 
   <section id="visao" class="section active">
     <div class="grid4">
-      <div class="card"><small>Entradas totais</small><strong id="totalEntradas" class="positive">R$ 0,00</strong></div>
-      <div class="card"><small>Saídas totais</small><strong id="totalSaidas" class="negative">R$ 0,00</strong></div>
-      <div class="card"><small>Fluxo / Saldo</small><strong id="saldo" class="info">R$ 0,00</strong></div>
-      <div class="card"><small>A receber pendente</small><strong id="aReceber" class="warning">R$ 0,00</strong></div>
+      <div class="card"><div><small>Receitas do período</small><strong id="totalEntradas" class="positive">R$ 0,00</strong></div><div class="metricSub">Entradas fixas + variáveis</div></div>
+      <div class="card"><div><small>Despesas do período</small><strong id="totalSaidas" class="negative">R$ 0,00</strong></div><div class="metricSub">Saídas + custos</div></div>
+      <div class="card"><div><small>Resultado operacional</small><strong id="saldo" class="info">R$ 0,00</strong></div><div class="metricSub">Entradas menos saídas</div></div>
+      <div class="card"><div><small>A receber</small><strong id="aReceber" class="warning">R$ 0,00</strong></div><div class="metricSub">Valores ainda pendentes</div></div>
     </div>
     <div class="grid4">
       <div class="card"><small>Custos fixos</small><strong id="fixos" class="warning">R$ 0,00</strong></div>
@@ -101,8 +182,8 @@
       <div class="card"><small>Lançamentos</small><strong id="qtdLancamentos" class="info">0</strong></div>
     </div>
     <div class="grid2">
-      <div class="panel chartBox"><h2>Fluxo por categoria</h2><canvas id="categoryChart"></canvas></div>
-      <div class="panel chartBox"><h2>Entradas x Saídas</h2><canvas id="flowChart"></canvas></div>
+      <div class="panel chartBox"><h2>Resultado por categoria</h2><p class="status">Distribuição financeira por categoria</p><canvas id="categoryChart"></canvas></div>
+      <div class="panel chartBox"><h2>Entradas vs Saídas</h2><p class="status">Comparativo por tipo de movimentação</p><canvas id="flowChart"></canvas></div>
     </div>
   </section>
 
@@ -114,7 +195,7 @@
         <div><label>Vencimento</label><input id="dueDate" type="date" onchange="updateExpectedDate()"/></div>
         <div><label>Data prevista no caixa</label><input id="expectedDate" type="date"/></div>
         <div class="full"><label>Descrição</label><input id="description" placeholder="Ex: Cliente X, aluguel, ferramenta, conta..."/></div>
-        <div><label>Tipo</label><select id="type"><option>Entrada Fixa</option><option>Entrada Variável</option><option>Saída</option><option>Custo Fixo</option><option>Custo Variável</option></select></div>
+        <div><label>Tipo</label><select id="type"><option>Entrada Fixa</option><option>Entrada Variável</option><option>Saída</option><option>Custo Fixo</option><option>Custo Variável</option><option>Retirada da Empresa</option></select></div>
         <div><label>Valor</label><input id="amount" type="number" step="0.01" placeholder="0,00"/></div>
         <div><label>Categoria</label><input id="category" placeholder="Cliente, tráfego, aluguel, alimentação..."/></div>
         <div><label>Status</label><select id="paymentStatus"><option>Pendente</option><option>Previsto</option><option>Pago/Recebido</option><option>Atrasado</option></select></div>
@@ -155,7 +236,7 @@
         </p>
         <textarea id="bulkText" placeholder="BeiCapelli Cobrança Recorrente R$ 375 Gestão de tráfego&#10;Ivanete Arruda Carvalho Cobrança Recorrente R$ 100 Mensalidade Site"></textarea>
         <div class="formGrid">
-          <div><label>Tipo padrão</label><select id="bulkType"><option>Entrada Fixa</option><option>Entrada Variável</option><option>Saída</option><option>Custo Fixo</option><option>Custo Variável</option></select></div>
+          <div><label>Tipo padrão</label><select id="bulkType"><option>Entrada Fixa</option><option>Entrada Variável</option><option>Saída</option><option>Custo Fixo</option><option>Custo Variável</option><option>Retirada da Empresa</option></select></div>
           <div><label>Status padrão</label><select id="bulkStatus"><option>Pendente</option><option>Previsto</option><option>Pago/Recebido</option></select></div>
           <div><label>Forma padrão</label><select id="bulkPayment"><option>Pix</option><option>Boleto</option><option>Transferência</option><option>Cartão de crédito</option><option>Outro</option></select></div>
           <div><label>Vencimento padrão</label><input id="bulkDueDate" type="date"></div>
@@ -207,7 +288,93 @@
       <div class="panel"><h2>Resumo por categoria</h2><div id="categorySummary"></div></div>
     </div>
   </section>
+
+  <section id="comparativo" class="section">
+    <div class="comparisonHero">
+      <div class="panel">
+        <h2>Comparativo Pessoal x Empresas</h2>
+        <p class="status">Veja quanto entra nas empresas, quanto sai no pessoal e quanto foi retirado da empresa para uso pessoal.</p>
+        <div class="grid3" style="margin-top:16px">
+          <div class="card"><small>Total empresas</small><strong id="cmpEmpresas" class="positive comparisonBig">R$ 0,00</strong></div>
+          <div class="card"><small>Total pessoal</small><strong id="cmpPessoal" class="info comparisonBig">R$ 0,00</strong></div>
+          <div class="card"><small>Retiradas</small><strong id="cmpRetiradas" class="warning comparisonBig">R$ 0,00</strong></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Saúde do empresário</h2>
+        <div id="cmpInsight" class="status">Sem dados suficientes ainda.</div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h2>Empresas cadastradas</h2>
+        <div style="overflow:auto">
+          <table class="miniTable">
+            <thead><tr><th>Empresa</th><th>Entradas</th><th>Saídas</th><th>Saldo</th><th>Retirada</th></tr></thead>
+            <tbody id="companyComparisonRows"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Pessoal</h2>
+        <div id="personalComparisonBox"></div>
+      </div>
+    </div>
+  </section>
+
+  </main>
 </div>
+
+  <div id="profileModal" class="modalOverlay">
+    <div class="modal">
+      <div class="modalHeader">
+        <h2>Editar perfil</h2>
+        <button class="secondary" onclick="closeProfileModal()">Fechar</button>
+      </div>
+
+      <div class="profilePreview">
+        <div id="profileModalAvatar" class="avatar">?</div>
+        <div class="userMeta">
+          <strong id="profileModalName">Usuário</strong>
+          <span id="profileModalEmail">email</span>
+        </div>
+      </div>
+
+      <div class="formGrid">
+        <div>
+          <label>Nome de exibição</label>
+          <input id="profileDisplayName" placeholder="Seu nome">
+        </div>
+        <div>
+          <label>Telefone / WhatsApp</label>
+          <input id="profilePhone" placeholder="(51) 99999-9999">
+        </div>
+        <div>
+          <label>Cargo</label>
+          <input id="profileRole" placeholder="CEO, Gestor, Financeiro...">
+        </div>
+        <div>
+          <label>Nome da empresa</label>
+          <input id="profileCompanyName" placeholder="Empresa">
+        </div>
+        <div class="full">
+          <label>Foto de perfil personalizada</label>
+          <input id="profilePhotoURL" placeholder="Cole aqui uma URL de imagem. Se vazio, usa a foto do Google.">
+          <p class="hint">Para trocar a foto, suba a imagem em algum lugar e cole o link direto aqui. Futuramente dá para conectar upload no Firebase Storage.</p>
+        </div>
+        <div class="full">
+          <label>Observações do perfil</label>
+          <textarea id="profileNotes" placeholder="Preferências, dados internos, informações úteis..."></textarea>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button class="primary" onclick="saveProfile()">Salvar perfil</button>
+        <button class="secondary" onclick="resetProfilePhoto()">Usar foto do Google</button>
+      </div>
+    </div>
+  </div>
 
 <script>
 const firebaseConfig = {
@@ -227,6 +394,7 @@ const db = firebase.firestore();
 let profile = "pessoal";
 let items = [];
 let user = null;
+let userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "" };
 let unsubscribe = null;
 let categoryChart, flowChart;
 
@@ -240,6 +408,7 @@ function setSection(evt,id){
   document.querySelectorAll(".navTab").forEach(b => b.classList.remove("active"));
   evt.target.classList.add("active");
   setTimeout(renderCharts, 100);
+  if(id === "comparativo") renderComparison();
 }
 function register(){
   const email=document.getElementById("email").value;
@@ -257,18 +426,212 @@ function loginGoogle(){
 }
 function logout(){auth.signOut()}
 
-auth.onAuthStateChanged(u=>{
+
+function initialsFromUser(u){
+  const source = (u && (u.displayName || u.email)) ? (u.displayName || u.email) : "?";
+  return source.trim().slice(0,1).toUpperCase();
+}
+
+function currentDisplayName(u){
+  return (userSettings.displayName || (u && u.displayName) || "Usuário").trim();
+}
+
+function currentPhotoURL(u){
+  return (userSettings.customPhotoURL || (u && u.photoURL) || "").trim();
+}
+
+function renderUserUI(u){
+  const avatarEls = [
+    document.getElementById("userAvatar"),
+    document.getElementById("topAvatar"),
+    document.getElementById("profileModalAvatar")
+  ];
+  const name = u ? currentDisplayName(u) : "Usuário";
+  const email = u ? (u.email || "") : "Desconectado";
+  const photo = u ? currentPhotoURL(u) : "";
+
+  document.getElementById("userName").textContent = name;
+  document.getElementById("userEmail").textContent = email;
+  document.getElementById("topUserLabel").textContent = u ? name : "Faça login";
+  if(document.getElementById("profileModalName")) document.getElementById("profileModalName").textContent = name;
+  if(document.getElementById("profileModalEmail")) document.getElementById("profileModalEmail").textContent = email;
+
+  avatarEls.forEach(el => {
+    if(!el) return;
+    if(photo){
+      el.innerHTML = `<img src="${photo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" referrerpolicy="no-referrer">`;
+    } else {
+      el.textContent = initialsFromUser(u);
+    }
+  });
+}
+
+function ensureCompanies(){
+  if(!Array.isArray(userSettings.companies) || !userSettings.companies.length){
+    userSettings.companies = [{id:"midia", name:userSettings.companyName || "Empresa"}];
+  }
+  if(!userSettings.companies.find(c => c.id === "midia")){
+    userSettings.companies.unshift({id:"midia", name:userSettings.companyName || "Empresa"});
+  }
+}
+
+function currentCompany(){
+  ensureCompanies();
+  return userSettings.companies.find(c => c.id === profile) || userSettings.companies[0];
+}
+
+function renderProfileTabs(){
+  ensureCompanies();
+  const box = document.getElementById("profileTabs");
+  if(!box) return;
+  box.innerHTML = `<button id="personalTab" class="tab ${profile === "pessoal" ? "active" : ""}" onclick="setProfile('pessoal')">Pessoal</button>`;
+  userSettings.companies.forEach(c => {
+    box.innerHTML += `<button class="tab ${profile === c.id ? "active" : ""}" onclick="setProfile('${c.id}')">${safe(c.name || "Empresa")}</button>`;
+  });
+}
+
+function renderCompanyName(){
+  ensureCompanies();
+  const company = currentCompany();
+  const name = (company.name || userSettings.companyName || "Empresa").trim() || "Empresa";
+
+  renderProfileTabs();
+
+  if(document.getElementById("companyNameInput")){
+    document.getElementById("companyNameInput").value = profile === "pessoal" ? "" : (name === "Empresa" ? "" : name);
+    document.getElementById("companyNameInput").disabled = profile === "pessoal";
+  }
+  if(document.getElementById("profileCompanyName")) document.getElementById("profileCompanyName").value = name === "Empresa" ? "" : name;
+}
+
+async function loadUserSettings(){
+  if(!user) return;
+  const ref = db.collection("users").doc(user.uid).collection("settings").doc("profile");
+  const snap = await ref.get();
+  if(snap.exists){
+    userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "", ...snap.data() };
+  } else {
+    userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "" };
+  }
+  ensureCompanies();
+  }
+  renderCompanyName();
+}
+
+
+function openProfileModal(){
+  if(!user) return alert("Faça login primeiro.");
+  document.getElementById("profileDisplayName").value = userSettings.displayName || (user.displayName || "");
+  document.getElementById("profilePhone").value = userSettings.phone || "";
+  document.getElementById("profileRole").value = userSettings.role || "";
+  document.getElementById("profileCompanyName").value = userSettings.companyName === "Empresa" ? "" : (userSettings.companyName || "");
+  document.getElementById("profilePhotoURL").value = userSettings.customPhotoURL || "";
+  document.getElementById("profileNotes").value = userSettings.profileNotes || "";
+  renderUserUI(user);
+  document.getElementById("profileModal").classList.add("active");
+}
+
+function closeProfileModal(){
+  document.getElementById("profileModal").classList.remove("active");
+}
+
+async function saveProfile(){
+  if(!user) return alert("Faça login primeiro.");
+  const profileData = {
+    displayName: document.getElementById("profileDisplayName").value.trim(),
+    phone: document.getElementById("profilePhone").value.trim(),
+    role: document.getElementById("profileRole").value.trim(),
+    companyName: document.getElementById("profileCompanyName").value.trim() || "Empresa",
+    companies: userSettings.companies,
+    customPhotoURL: document.getElementById("profilePhotoURL").value.trim(),
+    profileNotes: document.getElementById("profileNotes").value.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  ensureCompanies();
+  if(profile !== "pessoal"){
+    userSettings.companies = userSettings.companies.map(c => c.id === profile ? {...c, name: profileData.companyName} : c);
+    profileData.companies = userSettings.companies;
+    if(profile === "midia") profileData.companyName = profileData.companyName;
+  }
+  userSettings = { ...userSettings, ...profileData };
+  await db.collection("users").doc(user.uid).collection("settings").doc("profile").set(profileData, { merge: true });
+  renderCompanyName();
+  renderUserUI(user);
+  closeProfileModal();
+  alert("Perfil atualizado.");
+}
+
+async function resetProfilePhoto(){
+  if(!user) return;
+  document.getElementById("profilePhotoURL").value = "";
+  userSettings.customPhotoURL = "";
+  await db.collection("users").doc(user.uid).collection("settings").doc("profile").set({
+    customPhotoURL: "",
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+  renderUserUI(user);
+}
+
+async function saveCompanyName(){
+  if(!user) return alert("Faça login primeiro.");
+  if(profile === "pessoal") return alert("Selecione uma empresa para renomear.");
+  const name = (document.getElementById("companyNameInput").value || "Empresa").trim() || "Empresa";
+  ensureCompanies();
+  userSettings.companies = userSettings.companies.map(c => c.id === profile ? {...c, name} : c);
+  if(profile === "midia") userSettings.companyName = name;
+
+  await db.collection("users").doc(user.uid).collection("settings").doc("profile").set({
+    companyName: userSettings.companyName || name,
+    companies: userSettings.companies,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+
+  renderCompanyName();
+  renderUserUI(user);
+  alert("Nome da empresa salvo.");
+}
+
+async function addCompany(){
+  if(!user) return alert("Faça login primeiro.");
+  const input = document.getElementById("newCompanyName");
+  const name = (input.value || "").trim();
+  if(!name) return alert("Informe o nome da empresa.");
+
+  ensureCompanies();
+  const id = "empresa_" + crypto.randomUUID().replace(/-/g, "").slice(0,12);
+  userSettings.companies.push({id, name});
+
+  await db.collection("users").doc(user.uid).collection("settings").doc("profile").set({
+    companies: userSettings.companies,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+
+  input.value = "";
+  renderCompanyName();
+  setProfile(id);
+}
+
+
+auth.onAuthStateChanged(async u=>{
   user=u;
   if(unsubscribe) unsubscribe();
   const loggedIn=!!u;
   ["loginFields","passwordField","loginBtn","registerBtn","googleBtn"].forEach(id=>document.getElementById(id).style.display=loggedIn?"none":"block");
   document.getElementById("logoutBtn").style.display=loggedIn?"block":"none";
+  renderUserUI(u);
+
   if(!u){
     items=[];
+    userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "" };
+    renderCompanyName();
     setStatus("🔴 Desconectado. Faça login para salvar na nuvem.");
     render();
     return;
   }
+
+  await loadUserSettings();
+  renderUserUI(u);
   document.getElementById("email").value="";
   document.getElementById("password").value="";
   setStatus("🟢 Logado como: " + (u.displayName ? u.displayName + " — " : "") + u.email + " | Salvando online no Firebase.");
@@ -286,8 +649,7 @@ function listenData(){
 
 function setProfile(next){
   profile=next;
-  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
-  document.querySelectorAll(".tab")[next==="pessoal"?0:1].classList.add("active");
+  renderCompanyName();
   items=[];
   listenData();
   render();
@@ -458,7 +820,7 @@ function actionBtn(item){
 }
 
 
-const TYPE_OPTIONS = ["Entrada Fixa","Entrada Variável","Saída","Custo Fixo","Custo Variável"];
+const TYPE_OPTIONS = ["Entrada Fixa","Entrada Variável","Saída","Custo Fixo","Custo Variável","Retirada da Empresa"];
 const STATUS_OPTIONS = ["Pendente","Previsto","Pago/Recebido","Atrasado"];
 const PAYMENT_OPTIONS = ["Pix","Boleto","Transferência","Cartão de crédito","Cartão de débito","Dinheiro","Outro"];
 const RECURRENCE_OPTIONS = ["Não recorrente","Mensal","Semanal","Anual"];
@@ -636,6 +998,7 @@ function normalizeType(value){
   if (v.includes("entrada")) return "Entrada Variável";
   if (v.includes("custo") && v.includes("fix")) return "Custo Fixo";
   if (v.includes("custo")) return "Custo Variável";
+  if (v.includes("retirada") || v.includes("pro labore") || v.includes("prolabore") || v.includes("distribuicao")) return "Retirada da Empresa";
   if (v.includes("saida") || v.includes("despesa") || v.includes("conta")) return "Saída";
   return value || "Entrada Variável";
 }
@@ -1004,6 +1367,79 @@ function downloadCSVModel(){
 }
 
 
+
+function isWithdrawal(item){
+  const text = normalizeKey(`${item.type || ""} ${item.category || ""} ${item.description || ""}`);
+  return item.type === "Retirada da Empresa" || text.includes("retirada") || text.includes("pro labore") || text.includes("prolabore") || text.includes("distribuicao");
+}
+
+function sumItems(list){
+  const entradas = list.filter(x=>isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const saidas = list.filter(x=>!isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const retiradas = list.filter(isWithdrawal).reduce((s,x)=>s+Number(x.amount||0),0);
+  return {entradas, saidas, saldo: entradas - saidas, retiradas};
+}
+
+async function getCollectionItems(profileId){
+  if(!user) return [];
+  const snap = await db.collection("users").doc(user.uid).collection(profileId).get();
+  return snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+}
+
+async function renderComparison(){
+  if(!user) return;
+  ensureCompanies();
+  const personalItems = await getCollectionItems("pessoal");
+  const personal = sumItems(personalItems);
+
+  let totalCompanies = {entradas:0, saidas:0, saldo:0, retiradas:0};
+  const rows = [];
+
+  for(const company of userSettings.companies){
+    const list = await getCollectionItems(company.id);
+    const s = sumItems(list);
+    totalCompanies.entradas += s.entradas;
+    totalCompanies.saidas += s.saidas;
+    totalCompanies.saldo += s.saldo;
+    totalCompanies.retiradas += s.retiradas;
+    rows.push({company, ...s});
+  }
+
+  document.getElementById("cmpEmpresas").textContent = brl(totalCompanies.saldo);
+  document.getElementById("cmpPessoal").textContent = brl(personal.saldo);
+  document.getElementById("cmpRetiradas").textContent = brl(totalCompanies.retiradas);
+
+  const withdrawalRate = totalCompanies.entradas ? (totalCompanies.retiradas / totalCompanies.entradas) * 100 : 0;
+  let insight = "Sem dados suficientes ainda.";
+  if(totalCompanies.entradas > 0){
+    insight = `Você retirou ${withdrawalRate.toFixed(1)}% das entradas das empresas para o pessoal. `;
+    if(withdrawalRate <= 20) insight += "Retirada controlada em relação à receita.";
+    else if(withdrawalRate <= 40) insight += "Atenção: a retirada já pesa no caixa empresarial.";
+    else insight += "Alerta: retirada alta pode comprometer crescimento e capital de giro.";
+  }
+  document.getElementById("cmpInsight").textContent = insight;
+
+  const tbody = document.getElementById("companyComparisonRows");
+  tbody.innerHTML = rows.length ? "" : `<tr><td colspan="5" class="empty">Nenhuma empresa cadastrada.</td></tr>`;
+  rows.forEach(r => {
+    tbody.innerHTML += `<tr>
+      <td>${safe(r.company.name)}</td>
+      <td class="positive">${brl(r.entradas)}</td>
+      <td class="negative">${brl(r.saidas)}</td>
+      <td class="${r.saldo >= 0 ? 'positive':'negative'}">${brl(r.saldo)}</td>
+      <td class="warning">${brl(r.retiradas)}</td>
+    </tr>`;
+  });
+
+  document.getElementById("personalComparisonBox").innerHTML = `
+    <div style="display:grid;gap:10px">
+      <div class="card"><small>Entradas pessoais</small><strong class="positive">${brl(personal.entradas)}</strong></div>
+      <div class="card"><small>Saídas pessoais</small><strong class="negative">${brl(personal.saidas)}</strong></div>
+      <div class="card"><small>Saldo pessoal</small><strong class="${personal.saldo >= 0 ? 'positive':'negative'}">${brl(personal.saldo)}</strong></div>
+    </div>
+  `;
+}
+
 function exportCSV(){
   const rows=[["Data","Vencimento","Previsão Caixa","Descrição","Tipo","Categoria","Status","Pagamento","Recorrência","Parcela","Responsável","Valor","Observação"]];
   items.forEach(x=>rows.push([x.date,x.dueDate||"",x.expectedDate||"",x.description,x.type,x.category,x.paymentStatus||"",x.paymentMethod||"",x.recurrence||"",x.installment||"",x.owner||"",x.amount,x.notes||""]));
@@ -1016,6 +1452,8 @@ function exportCSV(){
 }
 function safe(str){return String(str??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 
+renderUserUI(null);
+renderCompanyName();
 clearForm();
 render();
 </script>
