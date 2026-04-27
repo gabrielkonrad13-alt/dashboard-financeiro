@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard Financeiro | Mídia Growth</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -9,37 +9,43 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    :root {
-      --bg:#0b1020; --panel:#111827; --card:#1f2937; --line:rgba(255,255,255,.1);
-      --text:#f8fafc; --muted:#94a3b8; --green:#22c55e; --red:#ef4444; --blue:#38bdf8; --yellow:#f59e0b;
+    :root{
+      --bg:#070b16;--panel:#101827;--panel2:#162033;--line:rgba(255,255,255,.10);
+      --text:#f8fafc;--muted:#94a3b8;--green:#22c55e;--red:#ef4444;--blue:#38bdf8;--yellow:#f59e0b;--purple:#8b5cf6;
+      --radius:18px;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Arial, sans-serif;background:radial-gradient(circle at top left,rgba(56,189,248,.16),transparent 35%),var(--bg);color:var(--text)}
-    .app{max-width:1280px;margin:auto;padding:28px}
-    header{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px}
-    h1{margin:0;font-size:32px;letter-spacing:-.04em} p{color:var(--muted)}
-    .auth,.panel,.card{background:rgba(17,24,39,.9);border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
-    .auth{padding:18px;display:grid;grid-template-columns:1fr 1fr auto auto auto auto;gap:10px;align-items:end;margin-bottom:18px}
-    label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase;margin-bottom:6px}
-    input,select,textarea{width:100%;border:1px solid var(--line);background:#0f172a;color:var(--text);padding:12px;border-radius:12px;outline:none}
-    textarea{min-height:70px;resize:vertical}
+    body{margin:0;font-family:Arial,sans-serif;background:radial-gradient(circle at top left,rgba(56,189,248,.12),transparent 34%),var(--bg);color:var(--text)}
+    .app{max-width:1320px;margin:auto;padding:26px}
+    header{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:18px}
+    h1{margin:0;font-size:32px;letter-spacing:-.04em}.subtitle{color:var(--muted);margin:8px 0 0}
     button{border:0;border-radius:14px;padding:12px 14px;color:white;font-weight:800;cursor:pointer}
-    .primary{background:linear-gradient(135deg,#2563eb,#7c3aed)} .secondary{background:#334155} .danger{background:#b91c1c}
-    .tabs{display:flex;gap:8px;background:rgba(255,255,255,.06);padding:8px;border-radius:999px;border:1px solid var(--line)}
-    .tab{background:transparent;color:var(--muted);border-radius:999px} .tab.active{background:white;color:#020617}
-    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
-    .card{padding:18px} .card small{color:var(--muted);font-weight:800;text-transform:uppercase;font-size:11px} .card strong{display:block;font-size:24px;margin-top:10px}
-    .positive{color:var(--green)} .negative{color:var(--red)} .info{color:var(--blue)} .warning{color:var(--yellow)}
-    .layout{display:grid;grid-template-columns:420px 1fr;gap:18px;align-items:start}
-    .panel{padding:18px} .panel h2{margin:0 0 14px;font-size:18px}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .primary{background:linear-gradient(135deg,#2563eb,#7c3aed)}.secondary{background:#334155}.danger{background:#b91c1c}.success{background:#15803d}.smallBtn{padding:8px 10px;border-radius:10px;font-size:12px}
+    .profileTabs,.navTabs{display:flex;gap:8px;background:rgba(255,255,255,.06);padding:8px;border-radius:999px;border:1px solid var(--line);width:max-content}
+    .tab,.navTab{background:transparent;color:var(--muted);border-radius:999px}.tab.active,.navTab.active{background:white;color:#020617}
+    .auth,.panel,.card,.mobileCard{background:rgba(16,24,39,.92);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 20px 50px rgba(0,0,0,.24)}
+    .auth{padding:16px;display:grid;grid-template-columns:1fr 1fr auto auto auto auto;gap:10px;align-items:end;margin-bottom:16px}
+    label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase;margin:12px 0 6px;letter-spacing:.04em}
+    input,select,textarea{width:100%;border:1px solid var(--line);background:#0f172a;color:var(--text);padding:12px;border-radius:12px;outline:none}
+    textarea{min-height:72px;resize:vertical}.status{font-size:13px;color:var(--muted)}
+    .section{display:none}.section.active{display:block}
+    .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .card{padding:18px}.card small{color:var(--muted);font-weight:800;text-transform:uppercase;font-size:11px}.card strong{display:block;font-size:25px;margin-top:10px;letter-spacing:-.04em}
+    .positive{color:var(--green)}.negative{color:var(--red)}.info{color:var(--blue)}.warning{color:var(--yellow)}
+    .panel{padding:18px;margin-bottom:14px}.panel h2{margin:0 0 14px;font-size:19px}.panel h3{margin:0 0 10px;font-size:16px;color:var(--muted)}
+    .formGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.full{grid-column:1/-1}
     .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-    .charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px} .chartBox{min-height:280px}
-    table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-    th{color:var(--muted);font-size:11px;text-transform:uppercase;background:rgba(255,255,255,.04)} td[contenteditable=true]{background:rgba(255,255,255,.025);border-radius:8px;outline:none}
-    .pill{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(255,255,255,.08)}
-    .status{font-size:13px;color:var(--muted)} .empty{text-align:center;color:var(--muted);padding:28px}
-    @media(max-width:980px){header,.layout{display:block}.grid,.charts,.auth{grid-template-columns:1fr}.panel{margin-bottom:18px}}
+    table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+    th{color:var(--muted);font-size:11px;text-transform:uppercase;background:rgba(255,255,255,.04)}td[contenteditable=true]{background:rgba(255,255,255,.025);border-radius:8px;outline:none}
+    .pill{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(255,255,255,.08)}.empty{text-align:center;color:var(--muted);padding:28px}
+    .chartBox{min-height:290px}.toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+    .hint{font-size:12px;color:var(--muted);line-height:1.4;margin-top:8px}.mobileList{display:none}.mobileCard{padding:14px;margin-bottom:12px}.mobileCardTop{display:flex;justify-content:space-between;gap:12px}.mobileCard p{margin:6px 0;color:var(--muted);font-size:13px}
+    .overdue{border-left:4px solid var(--red)}.paid{border-left:4px solid var(--green)}.pending{border-left:4px solid var(--yellow)}
+    @media(max-width:980px){
+      header,.grid2,.grid3{display:block}.grid4,.formGrid,.auth{grid-template-columns:1fr}.profileTabs,.navTabs{width:100%;overflow:auto}.tab,.navTab{flex:1}.panel{margin-bottom:14px}
+      .desktopTable{display:none}.mobileList{display:block}.app{padding:16px}h1{font-size:26px}
+    }
   </style>
 </head>
 <body>
@@ -47,15 +53,15 @@
   <header>
     <div>
       <h1>Dashboard Financeiro</h1>
-      <p>Salvamento online no Firebase: Pessoal + Mídia Growth.</p>
+      <p class="subtitle">Sistema financeiro online para Pessoal + Mídia Growth.</p>
     </div>
-    <div class="tabs">
+    <div class="profileTabs">
       <button class="tab active" onclick="setProfile('pessoal')">Pessoal</button>
       <button class="tab" onclick="setProfile('midia')">Mídia Growth</button>
     </div>
   </header>
 
-  <section class="auth" id="authBox">
+  <section class="auth">
     <div id="loginFields"><label>Email</label><input id="email" type="email" placeholder="seuemail@gmail.com"></div>
     <div id="passwordField"><label>Senha</label><input id="password" type="password" placeholder="mínimo 6 caracteres"></div>
     <button class="primary" id="loginBtn" onclick="login()">Entrar</button>
@@ -65,49 +71,96 @@
     <div class="status" id="status" style="grid-column:1/-1">Faça login para salvar na nuvem.</div>
   </section>
 
-  <section class="grid">
-    <div class="card"><small>Entradas totais</small><strong id="totalEntradas" class="positive">R$ 0,00</strong></div>
-    <div class="card"><small>Saídas totais</small><strong id="totalSaidas" class="negative">R$ 0,00</strong></div>
-    <div class="card"><small>Fluxo / Saldo</small><strong id="saldo" class="info">R$ 0,00</strong></div>
-    <div class="card"><small>Custos fixos</small><strong id="fixos" class="warning">R$ 0,00</strong></div>
+  <nav class="navTabs">
+    <button class="navTab active" onclick="setSection(event,'visao')">Visão Geral</button>
+    <button class="navTab" onclick="setSection(event,'lancamentos')">Lançamentos</button>
+    <button class="navTab" onclick="setSection(event,'registros')">Registros</button>
+    <button class="navTab" onclick="setSection(event,'relatorios')">Relatórios</button>
+  </nav>
+
+  <section id="visao" class="section active">
+    <div class="grid4">
+      <div class="card"><small>Entradas totais</small><strong id="totalEntradas" class="positive">R$ 0,00</strong></div>
+      <div class="card"><small>Saídas totais</small><strong id="totalSaidas" class="negative">R$ 0,00</strong></div>
+      <div class="card"><small>Fluxo / Saldo</small><strong id="saldo" class="info">R$ 0,00</strong></div>
+      <div class="card"><small>A receber pendente</small><strong id="aReceber" class="warning">R$ 0,00</strong></div>
+    </div>
+    <div class="grid4">
+      <div class="card"><small>Custos fixos</small><strong id="fixos" class="warning">R$ 0,00</strong></div>
+      <div class="card"><small>A pagar pendente</small><strong id="aPagar" class="negative">R$ 0,00</strong></div>
+      <div class="card"><small>Recebido / Pago</small><strong id="realizado" class="positive">R$ 0,00</strong></div>
+      <div class="card"><small>Lançamentos</small><strong id="qtdLancamentos" class="info">0</strong></div>
+    </div>
+    <div class="grid2">
+      <div class="panel chartBox"><h2>Fluxo por categoria</h2><canvas id="categoryChart"></canvas></div>
+      <div class="panel chartBox"><h2>Entradas x Saídas</h2><canvas id="flowChart"></canvas></div>
+    </div>
   </section>
 
-  <main class="layout">
-    <section class="panel">
+  <section id="lancamentos" class="section">
+    <div class="panel">
       <h2>Novo lançamento</h2>
-      <label>Data</label><input id="date" type="date"/>
-      <label>Descrição</label><input id="description" placeholder="Ex: Cliente X, aluguel, ferramenta..."/>
-      <div class="row">
-        <div><label>Tipo</label><select id="type">
-          <option>Entrada Fixa</option><option>Entrada Variável</option><option>Saída</option><option>Custo Fixo</option><option>Custo Variável</option>
-        </select></div>
+      <div class="formGrid">
+        <div><label>Data de emissão/lançamento</label><input id="date" type="date"/></div>
+        <div><label>Vencimento</label><input id="dueDate" type="date" onchange="updateExpectedDate()"/></div>
+        <div><label>Data prevista no caixa</label><input id="expectedDate" type="date"/></div>
+        <div class="full"><label>Descrição</label><input id="description" placeholder="Ex: Cliente X, aluguel, ferramenta, conta..."/></div>
+        <div><label>Tipo</label><select id="type"><option>Entrada Fixa</option><option>Entrada Variável</option><option>Saída</option><option>Custo Fixo</option><option>Custo Variável</option></select></div>
         <div><label>Valor</label><input id="amount" type="number" step="0.01" placeholder="0,00"/></div>
+        <div><label>Categoria</label><input id="category" placeholder="Cliente, tráfego, aluguel, alimentação..."/></div>
+        <div><label>Status</label><select id="paymentStatus"><option>Pendente</option><option>Previsto</option><option>Pago/Recebido</option><option>Atrasado</option></select></div>
+        <div><label>Forma de pagamento</label><select id="paymentMethod" onchange="updateExpectedDate()"><option>Pix</option><option>Boleto</option><option>Cartão de crédito</option><option>Cartão de débito</option><option>Dinheiro</option><option>Transferência</option><option>Outro</option></select></div>
+        <div><label>Recorrência</label><select id="recurrence" onchange="toggleRecurrenceHint()"><option>Não recorrente</option><option>Mensal</option><option>Semanal</option><option>Anual</option></select></div>
+        <div><label>Quantidade de parcelas/meses</label><input id="recurrenceCount" type="number" min="1" value="1"/></div>
+        <div><label>Responsável</label><input id="owner" placeholder="Gabriel, cliente, fornecedor..."/></div>
+        <div class="full">
+          <p class="hint" id="recurrenceHint">Pagamento único: será criado apenas 1 lançamento.</p>
+          <p class="hint">Boleto: a data prevista no caixa é calculada automaticamente considerando compensação e fim de semana. Ex: vencendo sexta, previsão cai na segunda.</p>
+        </div>
+        <div class="full"><label>Observação</label><textarea id="notes" placeholder="Detalhes, contrato, responsável, motivo, etc."></textarea></div>
       </div>
-      <label>Categoria</label><input id="category" placeholder="Cliente, tráfego, aluguel, alimentação..."/>
-      <label>Observação</label><textarea id="notes" placeholder="Detalhes, vencimento, responsável, contrato..."></textarea>
       <div class="btns">
-        <button class="primary" onclick="addItem()">Adicionar</button>
-        <button class="secondary" onclick="exportCSV()">Exportar CSV</button>
-        
+        <button class="primary" onclick="addItem()">Adicionar lançamento</button>
+        <button class="secondary" onclick="clearForm()">Limpar campos</button>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section>
-      <div class="charts">
-        <div class="panel chartBox"><h2>Fluxo por categoria</h2><canvas id="categoryChart"></canvas></div>
-        <div class="panel chartBox"><h2>Entradas x Saídas</h2><canvas id="flowChart"></canvas></div>
+  <section id="registros" class="section">
+    <div class="grid2">
+      <div class="panel">
+        <div class="toolbar"><h2>Entradas</h2><span id="entradasCount" class="status">0 registros</span></div>
+        <div class="desktopTable" style="overflow:auto"><table><thead><tr><th>Previsto</th><th>Descrição</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Ação</th></tr></thead><tbody id="entradasRecords"></tbody></table></div>
+        <div id="entradasMobile" class="mobileList"></div>
       </div>
       <div class="panel">
-        <h2>Registros editáveis</h2>
-        <div style="overflow:auto">
-          <table>
-            <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Observação</th><th></th></tr></thead>
-            <tbody id="records"></tbody>
-          </table>
-        </div>
+        <div class="toolbar"><h2>Contas / Saídas</h2><span id="saidasCount" class="status">0 registros</span></div>
+        <div class="desktopTable" style="overflow:auto"><table><thead><tr><th>Venc.</th><th>Descrição</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Ação</th></tr></thead><tbody id="saidasRecords"></tbody></table></div>
+        <div id="saidasMobile" class="mobileList"></div>
       </div>
-    </section>
-  </main>
+    </div>
+    <div class="panel">
+      <div class="toolbar">
+        <h2>Tabela geral editável</h2>
+        <button class="secondary" onclick="exportCSV()">Exportar CSV</button>
+      </div>
+      <div class="desktopTable" style="overflow:auto">
+        <table>
+          <thead><tr><th>Data</th><th>Venc.</th><th>Prev.</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Status</th><th>Pagamento</th><th>Recorr.</th><th>Valor</th><th>Ação</th><th></th></tr></thead>
+          <tbody id="records"></tbody>
+        </table>
+      </div>
+      <div id="geralMobile" class="mobileList"></div>
+    </div>
+  </section>
+
+  <section id="relatorios" class="section">
+    <div class="grid3">
+      <div class="panel"><h2>Resumo por tipo</h2><div id="typeSummary"></div></div>
+      <div class="panel"><h2>Resumo por status</h2><div id="statusSummary"></div></div>
+      <div class="panel"><h2>Resumo por categoria</h2><div id="categorySummary"></div></div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -131,184 +184,342 @@ let user = null;
 let unsubscribe = null;
 let categoryChart, flowChart;
 
-const brl = v => Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+const brl = v => Number(v || 0).toLocaleString("pt-BR", {style:"currency",currency:"BRL"});
 const collectionRef = () => db.collection("users").doc(user.uid).collection(profile);
 
-function setStatus(msg) { document.getElementById("status").textContent = msg; }
-
-function register() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  auth.createUserWithEmailAndPassword(email, password).catch(e => alert(e.message));
+function setStatus(msg){document.getElementById("status").textContent = msg}
+function setSection(evt,id){
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".navTab").forEach(b => b.classList.remove("active"));
+  evt.target.classList.add("active");
+  setTimeout(renderCharts, 100);
 }
-
-function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  auth.signInWithEmailAndPassword(email, password).catch(e => alert(e.message));
+function register(){
+  const email=document.getElementById("email").value;
+  const password=document.getElementById("password").value;
+  auth.createUserWithEmailAndPassword(email,password).catch(e=>alert(e.message));
 }
-
-function loginGoogle() {
+function login(){
+  const email=document.getElementById("email").value;
+  const password=document.getElementById("password").value;
+  auth.signInWithEmailAndPassword(email,password).catch(e=>alert(e.message));
+}
+function loginGoogle(){
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(e => alert(e.message));
+  auth.signInWithPopup(provider).catch(e=>alert(e.message));
 }
+function logout(){auth.signOut()}
 
-function logout() { auth.signOut(); }
-
-auth.onAuthStateChanged(u => {
-  user = u;
-  if (unsubscribe) unsubscribe();
-
-  const loggedIn = !!u;
-  document.getElementById("loginFields").style.display = loggedIn ? "none" : "block";
-  document.getElementById("passwordField").style.display = loggedIn ? "none" : "block";
-  document.getElementById("loginBtn").style.display = loggedIn ? "none" : "inline-block";
-  document.getElementById("registerBtn").style.display = loggedIn ? "none" : "inline-block";
-  document.getElementById("googleBtn").style.display = loggedIn ? "none" : "inline-block";
-  document.getElementById("logoutBtn").style.display = loggedIn ? "inline-block" : "none";
-
-  if (!u) {
-    items = [];
+auth.onAuthStateChanged(u=>{
+  user=u;
+  if(unsubscribe) unsubscribe();
+  const loggedIn=!!u;
+  ["loginFields","passwordField","loginBtn","registerBtn","googleBtn"].forEach(id=>document.getElementById(id).style.display=loggedIn?"none":"block");
+  document.getElementById("logoutBtn").style.display=loggedIn?"block":"none";
+  if(!u){
+    items=[];
     setStatus("🔴 Desconectado. Faça login para salvar na nuvem.");
     render();
     return;
   }
-
-  document.getElementById("email").value = "";
-  document.getElementById("password").value = "";
+  document.getElementById("email").value="";
+  document.getElementById("password").value="";
   setStatus("🟢 Logado como: " + (u.displayName ? u.displayName + " — " : "") + u.email + " | Salvando online no Firebase.");
   listenData();
 });
 
-function listenData() {
-  if (!user) return;
-  if (unsubscribe) unsubscribe();
-  unsubscribe = collectionRef().orderBy("date", "desc").onSnapshot(snapshot => {
-    items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+function listenData(){
+  if(!user)return;
+  if(unsubscribe) unsubscribe();
+  unsubscribe = collectionRef().orderBy("expectedDate","desc").onSnapshot(snapshot=>{
+    items=snapshot.docs.map(doc=>({id:doc.id,...doc.data()}));
     render();
-  }, err => alert("Erro ao carregar dados: " + err.message));
+  },err=>alert("Erro ao carregar dados: "+err.message));
 }
 
-function setProfile(next) {
-  profile = next;
-  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
-  document.querySelectorAll(".tab")[next === "pessoal" ? 0 : 1].classList.add("active");
-  items = [];
+function setProfile(next){
+  profile=next;
+  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".tab")[next==="pessoal"?0:1].classList.add("active");
+  items=[];
   listenData();
   render();
 }
 
-async function addItem() {
-  if (!user) return alert("Faça login primeiro.");
-  const item = {
-    date: document.getElementById("date").value || new Date().toISOString().slice(0,10),
-    description: document.getElementById("description").value.trim(),
-    type: document.getElementById("type").value,
-    category: document.getElementById("category").value.trim() || "Sem categoria",
-    amount: Number(document.getElementById("amount").value || 0),
-    notes: document.getElementById("notes").value.trim(),
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  if (!item.description || item.amount <= 0) return alert("Preencha descrição e valor.");
-  await collectionRef().add(item);
-  clearForm();
+function addDays(date, days){
+  const d = new Date(date + "T12:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0,10);
 }
-
-async function updateItem(id, field, value) {
-  if (!user) return;
-  const parsed = field === "amount" ? Number(String(value).replace(",", ".").replace(/[^\d.-]/g, "")) || 0 : value;
-  await collectionRef().doc(id).update({ [field]: parsed });
+function addMonths(date, months){
+  const d = new Date(date + "T12:00:00");
+  const day = d.getDate();
+  d.setMonth(d.getMonth() + months);
+  if (d.getDate() < day) d.setDate(0);
+  return d.toISOString().slice(0,10);
 }
-
-async function removeItem(id) {
-  if (!user) return;
-  if (confirm("Excluir este lançamento?")) await collectionRef().doc(id).delete();
+function addYears(date, years){
+  const d = new Date(date + "T12:00:00");
+  d.setFullYear(d.getFullYear() + years);
+  return d.toISOString().slice(0,10);
 }
-
-function clearForm() {
-  ["description","amount","category","notes"].forEach(id => document.getElementById(id).value = "");
-  document.getElementById("date").value = new Date().toISOString().slice(0,10);
+function nextBusinessDay(date){
+  let d = new Date(date + "T12:00:00");
+  while([0,6].includes(d.getDay())) d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0,10);
 }
-
-function isEntrada(type) { return String(type).includes("Entrada"); }
-
-function render() {
-  const entradas = items.filter(x => isEntrada(x.type)).reduce((s,x) => s + Number(x.amount || 0), 0);
-  const saidas = items.filter(x => !isEntrada(x.type)).reduce((s,x) => s + Number(x.amount || 0), 0);
-  const fixos = items.filter(x => x.type === "Custo Fixo").reduce((s,x) => s + Number(x.amount || 0), 0);
-  const saldo = entradas - saidas;
-  document.getElementById("totalEntradas").textContent = brl(entradas);
-  document.getElementById("totalSaidas").textContent = brl(saidas);
-  document.getElementById("fixos").textContent = brl(fixos);
-  document.getElementById("saldo").textContent = brl(saldo);
-  document.getElementById("saldo").className = saldo >= 0 ? "positive" : "negative";
-
-  const tbody = document.getElementById("records");
-  tbody.innerHTML = "";
-  if (!items.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty">Nenhum lançamento ainda.</td></tr>';
-  } else {
-    items.forEach(item => {
-      tbody.innerHTML += `<tr>
-        <td contenteditable="true" onblur="updateItem('${item.id}','date',this.textContent)">${safe(item.date)}</td>
-        <td contenteditable="true" onblur="updateItem('${item.id}','description',this.textContent)">${safe(item.description)}</td>
-        <td><span class="pill">${safe(item.type)}</span></td>
-        <td contenteditable="true" onblur="updateItem('${item.id}','category',this.textContent)">${safe(item.category)}</td>
-        <td contenteditable="true" onblur="updateItem('${item.id}','amount',this.textContent)">${brl(item.amount)}</td>
-        <td contenteditable="true" onblur="updateItem('${item.id}','notes',this.textContent)">${safe(item.notes || "")}</td>
-        <td><button class="danger" onclick="removeItem('${item.id}')">Excluir</button></td>
-      </tr>`;
-    });
+function calculateExpectedDate(dueDate, method){
+  if(!dueDate) return "";
+  if(method === "Boleto"){
+    return nextBusinessDay(addDays(dueDate, 1));
   }
+  if(method === "Cartão de crédito"){
+    return nextBusinessDay(addDays(dueDate, 30));
+  }
+  return nextBusinessDay(dueDate);
+}
+function updateExpectedDate(){
+  const due = document.getElementById("dueDate").value;
+  const method = document.getElementById("paymentMethod").value;
+  document.getElementById("expectedDate").value = calculateExpectedDate(due, method);
+}
+function toggleRecurrenceHint(){
+  const recurrence = document.getElementById("recurrence").value;
+  const count = document.getElementById("recurrenceCount");
+  if(recurrence === "Não recorrente"){
+    count.value = 1;
+    document.getElementById("recurrenceHint").textContent = "Pagamento único: será criado apenas 1 lançamento.";
+  } else {
+    document.getElementById("recurrenceHint").textContent = "Recorrente: o sistema criará automaticamente lançamentos futuros conforme a quantidade informada.";
+  }
+}
+
+async function addItem(){
+  if(!user)return alert("Faça login primeiro.");
+  const baseDue = document.getElementById("dueDate").value || document.getElementById("date").value || new Date().toISOString().slice(0,10);
+  const recurrence = document.getElementById("recurrence").value;
+  const count = recurrence === "Não recorrente" ? 1 : Math.max(1, Number(document.getElementById("recurrenceCount").value || 1));
+  const base = {
+    date:document.getElementById("date").value || new Date().toISOString().slice(0,10),
+    description:document.getElementById("description").value.trim(),
+    type:document.getElementById("type").value,
+    category:document.getElementById("category").value.trim() || "Sem categoria",
+    amount:Number(document.getElementById("amount").value || 0),
+    paymentStatus:document.getElementById("paymentStatus").value,
+    paymentMethod:document.getElementById("paymentMethod").value,
+    recurrence,
+    recurrenceCount:count,
+    owner:document.getElementById("owner").value.trim(),
+    notes:document.getElementById("notes").value.trim(),
+    recurrenceGroupId: crypto.randomUUID()
+  };
+  if(!base.description || base.amount<=0)return alert("Preencha descrição e valor.");
+
+  const batch = db.batch();
+  for(let i=0;i<count;i++){
+    let dueDate = baseDue;
+    if(recurrence === "Mensal") dueDate = addMonths(baseDue, i);
+    if(recurrence === "Semanal") dueDate = addDays(baseDue, i*7);
+    if(recurrence === "Anual") dueDate = addYears(baseDue, i);
+
+    const item = {
+      ...base,
+      dueDate,
+      expectedDate: calculateExpectedDate(dueDate, base.paymentMethod),
+      installment: `${i+1}/${count}`,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    const ref = collectionRef().doc();
+    batch.set(ref, item);
+  }
+  await batch.commit();
+  clearForm();
+  alert(count === 1 ? "Lançamento criado." : `${count} lançamentos recorrentes criados.`);
+}
+
+async function updateItem(id,field,value){
+  if(!user)return;
+  const parsed=field==="amount"?Number(String(value).replace(",",".").replace(/[^\d.-]/g,"")) || 0:value;
+  await collectionRef().doc(id).update({[field]:parsed});
+}
+async function markPaid(id){
+  if(!user)return;
+  await collectionRef().doc(id).update({
+    paymentStatus:"Pago/Recebido",
+    paidAt:new Date().toISOString().slice(0,10)
+  });
+}
+async function removeItem(id){
+  if(!user)return;
+  if(confirm("Excluir este lançamento?")) await collectionRef().doc(id).delete();
+}
+function clearForm(){
+  ["description","amount","category","notes","owner","dueDate","expectedDate"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("date").value=new Date().toISOString().slice(0,10);
+  document.getElementById("recurrence").value="Não recorrente";
+  document.getElementById("recurrenceCount").value=1;
+  toggleRecurrenceHint();
+}
+function isEntrada(type){return String(type).includes("Entrada")}
+function isPaid(item){return item.paymentStatus === "Pago/Recebido"}
+function statusClass(item){
+  if(isPaid(item)) return "paid";
+  const today = new Date().toISOString().slice(0,10);
+  if(!isEntrada(item.type) && item.dueDate && item.dueDate < today) return "overdue";
+  return "pending";
+}
+
+function render(){
+  const entradas=items.filter(x=>isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const saidas=items.filter(x=>!isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const fixos=items.filter(x=>x.type==="Custo Fixo").reduce((s,x)=>s+Number(x.amount||0),0);
+  const saldo=entradas-saidas;
+  const aReceber=items.filter(x=>isEntrada(x.type)&&!isPaid(x)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const aPagar=items.filter(x=>!isEntrada(x.type)&&!isPaid(x)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const realizado=items.filter(x=>isPaid(x)).reduce((s,x)=>s+Number(x.amount||0)*(isEntrada(x.type)?1:-1),0);
+
+  document.getElementById("totalEntradas").textContent=brl(entradas);
+  document.getElementById("totalSaidas").textContent=brl(saidas);
+  document.getElementById("fixos").textContent=brl(fixos);
+  document.getElementById("saldo").textContent=brl(saldo);
+  document.getElementById("saldo").className=saldo>=0?"positive":"negative";
+  document.getElementById("aReceber").textContent=brl(aReceber);
+  document.getElementById("aPagar").textContent=brl(aPagar);
+  document.getElementById("realizado").textContent=brl(realizado);
+  document.getElementById("qtdLancamentos").textContent=items.length;
+
+  renderMainTable();
+  renderSplitRecords();
+  renderReports();
   renderCharts();
 }
 
-function renderCharts() {
-  const byCategory = {};
-  items.forEach(x => {
-    const signal = isEntrada(x.type) ? 1 : -1;
-    byCategory[x.category || "Sem categoria"] = (byCategory[x.category || "Sem categoria"] || 0) + Number(x.amount || 0) * signal;
-  });
+function actionBtn(item){
+  if(isPaid(item)) return `<span class="pill">Confirmado</span>`;
+  return `<button class="success smallBtn" onclick="markPaid('${item.id}')">Confirmar pago</button>`;
+}
 
-  const flowData = {
-    "Entrada Fixa": sum("Entrada Fixa"),
-    "Entrada Variável": sum("Entrada Variável"),
-    "Saída": sum("Saída"),
-    "Custo Fixo": sum("Custo Fixo"),
-    "Custo Variável": sum("Custo Variável")
-  };
-  function sum(type) { return items.filter(x => x.type === type).reduce((s,x) => s + Number(x.amount || 0), 0); }
-
-  if (categoryChart) categoryChart.destroy();
-  if (flowChart) flowChart.destroy();
-
-  categoryChart = new Chart(document.getElementById("categoryChart"), {
-    type:"bar",
-    data:{labels:Object.keys(byCategory).length?Object.keys(byCategory):["Sem dados"], datasets:[{label:"Fluxo",data:Object.values(byCategory).length?Object.values(byCategory):[0]}]},
-    options:{responsive:true,plugins:{legend:{display:false}}}
-  });
-
-  flowChart = new Chart(document.getElementById("flowChart"), {
-    type:"doughnut",
-    data:{labels:Object.keys(flowData), datasets:[{data:Object.values(flowData)}]},
-    options:{responsive:true}
+function renderMainTable(){
+  const tbody=document.getElementById("records");
+  const mobile=document.getElementById("geralMobile");
+  tbody.innerHTML="";
+  mobile.innerHTML="";
+  if(!items.length){
+    tbody.innerHTML='<tr><td colspan="12" class="empty">Nenhum lançamento ainda.</td></tr>';
+    mobile.innerHTML='<div class="empty">Nenhum lançamento ainda.</div>';
+    return;
+  }
+  items.forEach(item=>{
+    tbody.innerHTML+=`<tr>
+      <td contenteditable="true" onblur="updateItem('${item.id}','date',this.textContent)">${safe(item.date)}</td>
+      <td contenteditable="true" onblur="updateItem('${item.id}','dueDate',this.textContent)">${safe(item.dueDate||"")}</td>
+      <td contenteditable="true" onblur="updateItem('${item.id}','expectedDate',this.textContent)">${safe(item.expectedDate||"")}</td>
+      <td contenteditable="true" onblur="updateItem('${item.id}','description',this.textContent)">${safe(item.description)} ${item.installment?`<span class="pill">${item.installment}</span>`:""}</td>
+      <td><span class="pill">${safe(item.type)}</span></td>
+      <td contenteditable="true" onblur="updateItem('${item.id}','category',this.textContent)">${safe(item.category)}</td>
+      <td contenteditable="true" onblur="updateItem('${item.id}','paymentStatus',this.textContent)">${safe(item.paymentStatus||"")}</td>
+      <td contenteditable="true" onblur="updateItem('${item.id}','paymentMethod',this.textContent)">${safe(item.paymentMethod||"")}</td>
+      <td>${safe(item.recurrence||"")}</td>
+      <td contenteditable="true" onblur="updateItem('${item.id}','amount',this.textContent)">${brl(item.amount)}</td>
+      <td>${actionBtn(item)}</td>
+      <td><button class="danger smallBtn" onclick="removeItem('${item.id}')">Excluir</button></td>
+    </tr>`;
+    mobile.innerHTML += mobileCard(item);
   });
 }
 
-function exportCSV() {
-  const rows = [["Data","Descrição","Tipo","Categoria","Valor","Observação"]];
-  items.forEach(x => rows.push([x.date,x.description,x.type,x.category,x.amount,x.notes || ""]));
-  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(";")).join("\n");
-  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `financeiro_${profile}.csv`;
+function renderSplitRecords(){
+  const entradas=items.filter(x=>isEntrada(x.type));
+  const saidas=items.filter(x=>!isEntrada(x.type));
+  document.getElementById("entradasCount").textContent=entradas.length+(entradas.length===1?" registro":" registros");
+  document.getElementById("saidasCount").textContent=saidas.length+(saidas.length===1?" registro":" registros");
+
+  const eb=document.getElementById("entradasRecords");
+  const sb=document.getElementById("saidasRecords");
+  const em=document.getElementById("entradasMobile");
+  const sm=document.getElementById("saidasMobile");
+  eb.innerHTML=entradas.length?"":'<tr><td colspan="6" class="empty">Nenhuma entrada registrada.</td></tr>';
+  sb.innerHTML=saidas.length?"":'<tr><td colspan="6" class="empty">Nenhuma conta ou saída registrada.</td></tr>';
+  em.innerHTML=entradas.length?"":'<div class="empty">Nenhuma entrada registrada.</div>';
+  sm.innerHTML=saidas.length?"":'<div class="empty">Nenhuma conta ou saída registrada.</div>';
+
+  entradas.forEach(item=>{
+    eb.innerHTML+=`<tr><td>${safe(item.expectedDate||item.dueDate||item.date)}</td><td>${safe(item.description)} ${item.installment?`<span class="pill">${item.installment}</span>`:""}</td><td><span class="pill">${safe(item.type)}</span></td><td>${safe(item.paymentStatus||"")}</td><td class="positive">${brl(item.amount)}</td><td>${actionBtn(item)}</td></tr>`;
+    em.innerHTML += mobileCard(item);
+  });
+  saidas.forEach(item=>{
+    sb.innerHTML+=`<tr><td>${safe(item.dueDate||item.date)}</td><td>${safe(item.description)} ${item.installment?`<span class="pill">${item.installment}</span>`:""}</td><td><span class="pill">${safe(item.type)}</span></td><td>${safe(item.paymentStatus||"")}</td><td class="negative">${brl(item.amount)}</td><td>${actionBtn(item)}</td></tr>`;
+    sm.innerHTML += mobileCard(item);
+  });
+}
+
+function mobileCard(item){
+  return `<div class="mobileCard ${statusClass(item)}">
+    <div class="mobileCardTop">
+      <strong>${safe(item.description)}</strong>
+      <strong class="${isEntrada(item.type) ? 'positive':'negative'}">${brl(item.amount)}</strong>
+    </div>
+    <p>${safe(item.type)} ${item.installment?`• ${safe(item.installment)}`:""}</p>
+    <p>Status: ${safe(item.paymentStatus||"")} • Pagamento: ${safe(item.paymentMethod||"")}</p>
+    <p>Vencimento: ${safe(item.dueDate||"-")} • Previsão caixa: ${safe(item.expectedDate||"-")}</p>
+    <div class="btns">${actionBtn(item)} <button class="danger smallBtn" onclick="removeItem('${item.id}')">Excluir</button></div>
+  </div>`;
+}
+
+function renderReports(){
+  makeSummary("typeSummary", groupBy("type"));
+  makeSummary("statusSummary", groupBy("paymentStatus"));
+  makeSummary("categorySummary", groupBy("category"));
+}
+function groupBy(field){
+  const g={};
+  items.forEach(x=>{
+    const key=x[field] || "Sem informação";
+    const signal=isEntrada(x.type)?1:-1;
+    g[key]=(g[key]||0)+Number(x.amount||0)*signal;
+  });
+  return g;
+}
+function makeSummary(id,obj){
+  const el=document.getElementById(id);
+  const entries=Object.entries(obj);
+  el.innerHTML=entries.length?"":'<p class="status">Sem dados.</p>';
+  entries.sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).forEach(([k,v])=>{
+    el.innerHTML+=`<div style="display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:10px 0"><span>${safe(k)}</span><strong class="${v>=0?'positive':'negative'}">${brl(v)}</strong></div>`;
+  });
+}
+
+function renderCharts(){
+  const catCanvas=document.getElementById("categoryChart");
+  const flowCanvas=document.getElementById("flowChart");
+  if(!catCanvas || !flowCanvas)return;
+  const byCategory=groupBy("category");
+  const flowData={
+    "Entrada Fixa":sum("Entrada Fixa"),
+    "Entrada Variável":sum("Entrada Variável"),
+    "Saída":sum("Saída"),
+    "Custo Fixo":sum("Custo Fixo"),
+    "Custo Variável":sum("Custo Variável")
+  };
+  function sum(type){return items.filter(x=>x.type===type).reduce((s,x)=>s+Number(x.amount||0),0)}
+  if(categoryChart)categoryChart.destroy();
+  if(flowChart)flowChart.destroy();
+  categoryChart=new Chart(catCanvas,{type:"bar",data:{labels:Object.keys(byCategory).length?Object.keys(byCategory):["Sem dados"],datasets:[{label:"Fluxo",data:Object.values(byCategory).length?Object.values(byCategory):[0]}]},options:{responsive:true,plugins:{legend:{display:false}}}});
+  flowChart=new Chart(flowCanvas,{type:"doughnut",data:{labels:Object.keys(flowData),datasets:[{data:Object.values(flowData)}]},options:{responsive:true}});
+}
+
+function exportCSV(){
+  const rows=[["Data","Vencimento","Previsão Caixa","Descrição","Tipo","Categoria","Status","Pagamento","Recorrência","Parcela","Responsável","Valor","Observação"]];
+  items.forEach(x=>rows.push([x.date,x.dueDate||"",x.expectedDate||"",x.description,x.type,x.category,x.paymentStatus||"",x.paymentMethod||"",x.recurrence||"",x.installment||"",x.owner||"",x.amount,x.notes||""]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(";")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`financeiro_${profile}.csv`;
   a.click();
 }
-
-function safe(str) {
-  return String(str ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
-}
+function safe(str){return String(str??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
 
 clearForm();
 render();
