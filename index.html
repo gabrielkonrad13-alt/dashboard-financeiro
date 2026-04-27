@@ -123,6 +123,43 @@
         <button class="primary" onclick="addItem()">Adicionar lançamento</button>
         <button class="secondary" onclick="clearForm()">Limpar campos</button>
       </div>
+
+      <div class="panel" style="margin-top:18px;background:rgba(255,255,255,.035)">
+        <h2>Importar planilha CSV</h2>
+        <p class="hint">
+          Envie um CSV com colunas como: descrição, valor, tipo, vencimento, categoria, status, pagamento, recorrência.
+          Se já existir um lançamento com mesma descrição + tipo + vencimento + valor, ele será substituído/atualizado.
+        </p>
+        <input id="csvFile" type="file" accept=".csv,text/csv" />
+        <div class="btns">
+          <button class="primary" onclick="importCSV()">Importar CSV</button>
+          <button class="secondary" onclick="downloadCSVModel()">Baixar modelo CSV</button>
+        </div>
+        <p class="hint" id="importStatus"></p>
+      </div>
+
+      <div class="panel" style="margin-top:18px;background:rgba(255,255,255,.035)">
+        <h2>Importar por texto</h2>
+        <p class="hint">
+          Cole várias linhas copiadas da planilha. Exemplo: Cliente | Cobrança Recorrente | R$ 1.500 | Gestão de tráfego.
+          O sistema identifica cliente, valor, recorrência e descrição automaticamente.
+        </p>
+        <textarea id="bulkText" placeholder="BeiCapelli Cobrança Recorrente R$ 375 Gestão de tráfego&#10;Ivanete Arruda Carvalho Cobrança Recorrente R$ 100 Mensalidade Site"></textarea>
+        <div class="formGrid">
+          <div><label>Tipo padrão</label><select id="bulkType"><option>Entrada Fixa</option><option>Entrada Variável</option><option>Saída</option><option>Custo Fixo</option><option>Custo Variável</option></select></div>
+          <div><label>Status padrão</label><select id="bulkStatus"><option>Pendente</option><option>Previsto</option><option>Pago/Recebido</option></select></div>
+          <div><label>Forma padrão</label><select id="bulkPayment"><option>Pix</option><option>Boleto</option><option>Transferência</option><option>Cartão de crédito</option><option>Outro</option></select></div>
+          <div><label>Vencimento padrão</label><input id="bulkDueDate" type="date"></div>
+          <div><label>Meses recorrentes</label><input id="bulkMonths" type="number" min="1" value="1"></div>
+          <div><label>Categoria padrão</label><input id="bulkCategory" value="Cliente"></div>
+        </div>
+        <div class="btns">
+          <button class="primary" onclick="previewBulkText()">Pré-visualizar texto</button>
+          <button class="secondary" onclick="importBulkText()">Importar texto</button>
+        </div>
+        <p class="hint" id="bulkStatusMsg"></p>
+        <div id="bulkPreview" style="overflow:auto;margin-top:12px"></div>
+      </div>
     </div>
   </section>
 
@@ -508,6 +545,413 @@ function renderCharts(){
   categoryChart=new Chart(catCanvas,{type:"bar",data:{labels:Object.keys(byCategory).length?Object.keys(byCategory):["Sem dados"],datasets:[{label:"Fluxo",data:Object.values(byCategory).length?Object.values(byCategory):[0]}]},options:{responsive:true,plugins:{legend:{display:false}}}});
   flowChart=new Chart(flowCanvas,{type:"doughnut",data:{labels:Object.keys(flowData),datasets:[{data:Object.values(flowData)}]},options:{responsive:true}});
 }
+
+
+function normalizeKey(value){
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function normalizeMoney(value){
+  if (typeof value === "number") return value;
+  let v = String(value || "").trim();
+  v = v.replace(/[R$\s]/g, "");
+  if (v.includes(",") && v.includes(".")) v = v.replace(/\./g, "").replace(",", ".");
+  else if (v.includes(",")) v = v.replace(",", ".");
+  return Number(v) || 0;
+}
+
+function normalizeDate(value){
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const m = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (m) {
+    const dd = m[1].padStart(2, "0");
+    const mm = m[2].padStart(2, "0");
+    const yyyy = m[3].length === 2 ? "20" + m[3] : m[3];
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? "" : d.toISOString().slice(0,10);
+}
+
+function normalizeType(value){
+  const v = normalizeKey(value);
+  if (v.includes("entrada") && v.includes("fix")) return "Entrada Fixa";
+  if (v.includes("entrada")) return "Entrada Variável";
+  if (v.includes("custo") && v.includes("fix")) return "Custo Fixo";
+  if (v.includes("custo")) return "Custo Variável";
+  if (v.includes("saida") || v.includes("despesa") || v.includes("conta")) return "Saída";
+  return value || "Entrada Variável";
+}
+
+function normalizeStatus(value){
+  const v = normalizeKey(value);
+  if (v.includes("pago") || v.includes("recebido") || v.includes("quitado")) return "Pago/Recebido";
+  if (v.includes("atras")) return "Atrasado";
+  if (v.includes("prev")) return "Previsto";
+  return "Pendente";
+}
+
+function normalizePaymentMethod(value){
+  const v = normalizeKey(value);
+  if (v.includes("boleto")) return "Boleto";
+  if (v.includes("pix")) return "Pix";
+  if (v.includes("credito")) return "Cartão de crédito";
+  if (v.includes("debito")) return "Cartão de débito";
+  if (v.includes("dinheiro")) return "Dinheiro";
+  if (v.includes("transfer")) return "Transferência";
+  return value || "Pix";
+}
+
+function normalizeRecurrence(value){
+  const v = normalizeKey(value);
+  if (v.includes("mens")) return "Mensal";
+  if (v.includes("sem")) return "Semanal";
+  if (v.includes("anu") || v.includes("ano")) return "Anual";
+  return "Não recorrente";
+}
+
+function makeDuplicateKey(item){
+  return [
+    normalizeKey(item.description),
+    normalizeKey(item.type),
+    normalizeKey(item.dueDate || item.date),
+    Number(item.amount || 0).toFixed(2)
+  ].join("|");
+}
+
+function parseCSV(text){
+  const rows = [];
+  let row = [], cell = "", insideQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const next = text[i + 1];
+
+    if (char === '"' && insideQuotes && next === '"') {
+      cell += '"';
+      i++;
+    } else if (char === '"') {
+      insideQuotes = !insideQuotes;
+    } else if ((char === "," || char === ";") && !insideQuotes) {
+      row.push(cell);
+      cell = "";
+    } else if ((char === "\n" || char === "\r") && !insideQuotes) {
+      if (char === "\r" && next === "\n") i++;
+      row.push(cell);
+      if (row.some(v => String(v).trim() !== "")) rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+  row.push(cell);
+  if (row.some(v => String(v).trim() !== "")) rows.push(row);
+  return rows;
+}
+
+function mapCSVRow(headers, row){
+  const get = (...names) => {
+    for (const name of names) {
+      const idx = headers.findIndex(h => normalizeKey(h) === normalizeKey(name));
+      if (idx >= 0) return row[idx] || "";
+    }
+    return "";
+  };
+
+  const date = normalizeDate(get("date","data","data de emissão","data emissao","lançamento","lancamento")) || new Date().toISOString().slice(0,10);
+  const dueDate = normalizeDate(get("dueDate","vencimento","data de vencimento","venc."));
+  const type = normalizeType(get("type","tipo","categoria do lançamento","categoria lancamento"));
+  const paymentMethod = normalizePaymentMethod(get("paymentMethod","pagamento","forma de pagamento","método","metodo"));
+  const finalDue = dueDate || date;
+
+  return {
+    date,
+    dueDate: finalDue,
+    expectedDate: normalizeDate(get("expectedDate","previsão caixa","previsao caixa","data prevista","previsto")) || calculateExpectedDate(finalDue, paymentMethod),
+    description: get("description","descrição","descricao","cliente","conta","nome").trim(),
+    type,
+    category: get("category","categoria","grupo").trim() || "Sem categoria",
+    amount: normalizeMoney(get("amount","valor","preço","preco")),
+    paymentStatus: normalizeStatus(get("paymentStatus","status","situação","situacao")),
+    paymentMethod,
+    recurrence: normalizeRecurrence(get("recurrence","recorrência","recorrencia")),
+    recurrenceCount: Number(get("recurrenceCount","meses","parcelas","quantidade")) || 1,
+    owner: get("owner","responsável","responsavel","dono").trim(),
+    notes: get("notes","observação","observacao","obs").trim(),
+    importedAt: new Date().toISOString()
+  };
+}
+
+
+function parseBulkLine(line){
+  const clean = String(line || "").replace(/\t+/g, " ").replace(/\s+/g, " ").trim();
+  if(!clean) return null;
+
+  const moneyMatch = clean.match(/R\$\s?[\d\.\,]+|[\d\.\,]+\s?reais/i);
+  if(!moneyMatch) return null;
+
+  const amount = normalizeMoney(moneyMatch[0]);
+  const beforeMoney = clean.slice(0, moneyMatch.index).trim();
+  const afterMoney = clean.slice(moneyMatch.index + moneyMatch[0].length).trim();
+
+  const recurrenceTerms = [
+    "Cobrança Recorrente",
+    "Cobranca Recorrente",
+    "Recorrente",
+    "Mensalidade",
+    "Pagamento Único",
+    "Pagamento Unico",
+    "Único",
+    "Unico"
+  ];
+
+  let client = beforeMoney;
+  let recurrenceText = "";
+  for(const term of recurrenceTerms){
+    const idx = normalizeKey(beforeMoney).indexOf(normalizeKey(term));
+    if(idx >= 0){
+      client = beforeMoney.slice(0, idx).trim();
+      recurrenceText = term;
+      break;
+    }
+  }
+
+  const recurrence = normalizeKey(recurrenceText).includes("unico") ? "Não recorrente" : "Mensal";
+  const descriptionDetail = afterMoney || recurrenceText || "Cobrança";
+  const description = client ? `${client} - ${descriptionDetail}` : descriptionDetail;
+
+  return {
+    client,
+    description,
+    amount,
+    recurrence,
+    notes: clean
+  };
+}
+
+function getBulkParsedItems(){
+  const text = document.getElementById("bulkText").value;
+  return text
+    .split(/\n+/)
+    .map(parseBulkLine)
+    .filter(Boolean);
+}
+
+function previewBulkText(){
+  const items = getBulkParsedItems();
+  const preview = document.getElementById("bulkPreview");
+  const msg = document.getElementById("bulkStatusMsg");
+
+  if(!items.length){
+    msg.textContent = "Nenhum lançamento identificado. Verifique se as linhas têm cliente, R$ e descrição.";
+    preview.innerHTML = "";
+    return;
+  }
+
+  msg.textContent = `${items.length} lançamentos identificados.`;
+  preview.innerHTML = `<table>
+    <thead><tr><th>Cliente</th><th>Descrição</th><th>Valor</th><th>Recorrência</th></tr></thead>
+    <tbody>
+      ${items.map(item => `<tr>
+        <td>${safe(item.client)}</td>
+        <td>${safe(item.description)}</td>
+        <td class="positive">${brl(item.amount)}</td>
+        <td>${safe(item.recurrence)}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>`;
+}
+
+async function importBulkText(){
+  if(!user) return alert("Faça login primeiro.");
+  const parsed = getBulkParsedItems();
+  const msg = document.getElementById("bulkStatusMsg");
+  if(!parsed.length) return alert("Nenhuma linha válida encontrada.");
+
+  const due = document.getElementById("bulkDueDate").value || new Date().toISOString().slice(0,10);
+  const type = document.getElementById("bulkType").value;
+  const paymentStatus = document.getElementById("bulkStatus").value;
+  const paymentMethod = document.getElementById("bulkPayment").value;
+  const months = Math.max(1, Number(document.getElementById("bulkMonths").value || 1));
+  const category = document.getElementById("bulkCategory").value || "Cliente";
+
+  const currentSnapshot = await collectionRef().get();
+  const existingMap = new Map();
+  currentSnapshot.forEach(doc => {
+    const item = { id: doc.id, ...doc.data() };
+    existingMap.set(makeDuplicateKey(item), doc.id);
+  });
+
+  let created = 0, updated = 0;
+  let batch = db.batch();
+  let ops = 0;
+
+  async function commitIfNeeded(force = false){
+    if(ops >= 400 || (force && ops > 0)){
+      await batch.commit();
+      batch = db.batch();
+      ops = 0;
+    }
+  }
+
+  for(const p of parsed){
+    const count = p.recurrence === "Não recorrente" ? 1 : months;
+    const groupId = crypto.randomUUID();
+
+    for(let i=0;i<count;i++){
+      const dueDate = p.recurrence === "Mensal" ? addMonths(due, i) : due;
+      const item = {
+        date: new Date().toISOString().slice(0,10),
+        dueDate,
+        expectedDate: calculateExpectedDate(dueDate, paymentMethod),
+        description: p.description,
+        client: p.client,
+        type,
+        category,
+        amount: p.amount,
+        paymentStatus,
+        paymentMethod,
+        recurrence: p.recurrence,
+        recurrenceCount: count,
+        owner: "",
+        notes: p.notes,
+        installment: `${i+1}/${count}`,
+        recurrenceGroupId: groupId,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      const key = makeDuplicateKey(item);
+      const existingId = existingMap.get(key);
+
+      if(existingId){
+        batch.set(collectionRef().doc(existingId), item, { merge: true });
+        updated++;
+      } else {
+        const ref = collectionRef().doc();
+        batch.set(ref, {...item, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+        existingMap.set(key, ref.id);
+        created++;
+      }
+
+      ops++;
+      await commitIfNeeded(false);
+    }
+  }
+
+  await commitIfNeeded(true);
+  msg.textContent = `Importação por texto concluída: ${created} criados, ${updated} atualizados/substituídos.`;
+  document.getElementById("bulkText").value = "";
+  document.getElementById("bulkPreview").innerHTML = "";
+}
+
+
+async function importCSV(){
+  if(!user) return alert("Faça login primeiro.");
+  const fileInput = document.getElementById("csvFile");
+  const status = document.getElementById("importStatus");
+  const file = fileInput.files[0];
+  if(!file) return alert("Selecione um arquivo CSV.");
+
+  status.textContent = "Importando...";
+  const text = await file.text();
+  const rows = parseCSV(text);
+  if(rows.length < 2) {
+    status.textContent = "CSV vazio ou sem cabeçalho.";
+    return;
+  }
+
+  const headers = rows[0].map(h => String(h).trim());
+  const currentSnapshot = await collectionRef().get();
+  const existingMap = new Map();
+
+  currentSnapshot.forEach(doc => {
+    const item = { id: doc.id, ...doc.data() };
+    existingMap.set(makeDuplicateKey(item), doc.id);
+  });
+
+  let created = 0, updated = 0, skipped = 0;
+  const batchLimit = 400;
+  let batch = db.batch();
+  let ops = 0;
+
+  async function commitIfNeeded(force = false){
+    if(ops >= batchLimit || (force && ops > 0)){
+      await batch.commit();
+      batch = db.batch();
+      ops = 0;
+    }
+  }
+
+  for(let i = 1; i < rows.length; i++){
+    const mapped = mapCSVRow(headers, rows[i]);
+    if(!mapped.description || mapped.amount <= 0) {
+      skipped++;
+      continue;
+    }
+
+    const count = mapped.recurrence === "Não recorrente" ? 1 : Math.max(1, Number(mapped.recurrenceCount || 1));
+    const groupId = crypto.randomUUID();
+
+    for(let j = 0; j < count; j++){
+      let dueDate = mapped.dueDate;
+      if(mapped.recurrence === "Mensal") dueDate = addMonths(mapped.dueDate, j);
+      if(mapped.recurrence === "Semanal") dueDate = addDays(mapped.dueDate, j * 7);
+      if(mapped.recurrence === "Anual") dueDate = addYears(mapped.dueDate, j);
+
+      const item = {
+        ...mapped,
+        dueDate,
+        expectedDate: calculateExpectedDate(dueDate, mapped.paymentMethod),
+        installment: `${j+1}/${count}`,
+        recurrenceGroupId: groupId,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      const key = makeDuplicateKey(item);
+      const existingId = existingMap.get(key);
+
+      if(existingId){
+        batch.set(collectionRef().doc(existingId), item, { merge: true });
+        updated++;
+      } else {
+        const ref = collectionRef().doc();
+        batch.set(ref, {
+          ...item,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        existingMap.set(key, ref.id);
+        created++;
+      }
+
+      ops++;
+      await commitIfNeeded(false);
+    }
+  }
+
+  await commitIfNeeded(true);
+  status.textContent = `Importação concluída: ${created} criados, ${updated} atualizados/substituídos, ${skipped} ignorados.`;
+  fileInput.value = "";
+}
+
+function downloadCSVModel(){
+  const headers = ["data","vencimento","descricao","tipo","categoria","status","forma de pagamento","recorrencia","meses","responsavel","valor","observacao"];
+  const example = [
+    "2026-04-01","2026-04-10","Cliente Maestri","Entrada Fixa","Cliente","Pendente","Pix","Mensal","12","Gabriel","1500","Contrato mensal"
+  ];
+  const csv = [headers, example].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(";")).join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "modelo_importacao_financeiro.csv";
+  a.click();
+}
+
 
 function exportCSV(){
   const rows=[["Data","Vencimento","Previsão Caixa","Descrição","Tipo","Categoria","Status","Pagamento","Recorrência","Parcela","Responsável","Valor","Observação"]];
