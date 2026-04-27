@@ -19,7 +19,7 @@
     header{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px}
     h1{margin:0;font-size:32px;letter-spacing:-.04em} p{color:var(--muted)}
     .auth,.panel,.card{background:rgba(17,24,39,.9);border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
-    .auth{padding:18px;display:grid;grid-template-columns:1fr 1fr auto auto;gap:10px;align-items:end;margin-bottom:18px}
+    .auth{padding:18px;display:grid;grid-template-columns:1fr 1fr auto auto auto auto;gap:10px;align-items:end;margin-bottom:18px}
     label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase;margin-bottom:6px}
     input,select,textarea{width:100%;border:1px solid var(--line);background:#0f172a;color:var(--text);padding:12px;border-radius:12px;outline:none}
     textarea{min-height:70px;resize:vertical}
@@ -55,11 +55,13 @@
     </div>
   </header>
 
-  <section class="auth">
-    <div><label>Email</label><input id="email" type="email" placeholder="seuemail@gmail.com"></div>
-    <div><label>Senha</label><input id="password" type="password" placeholder="mínimo 6 caracteres"></div>
-    <button class="primary" onclick="login()">Entrar</button>
-    <button class="secondary" onclick="register()">Criar conta</button>
+  <section class="auth" id="authBox">
+    <div id="loginFields"><label>Email</label><input id="email" type="email" placeholder="seuemail@gmail.com"></div>
+    <div id="passwordField"><label>Senha</label><input id="password" type="password" placeholder="mínimo 6 caracteres"></div>
+    <button class="primary" id="loginBtn" onclick="login()">Entrar</button>
+    <button class="secondary" id="registerBtn" onclick="register()">Criar conta</button>
+    <button class="secondary" id="googleBtn" onclick="loginGoogle()">Entrar com Google</button>
+    <button class="danger" id="logoutBtn" onclick="logout()" style="display:none">Sair</button>
     <div class="status" id="status" style="grid-column:1/-1">Faça login para salvar na nuvem.</div>
   </section>
 
@@ -86,7 +88,7 @@
       <div class="btns">
         <button class="primary" onclick="addItem()">Adicionar</button>
         <button class="secondary" onclick="exportCSV()">Exportar CSV</button>
-        <button class="danger" onclick="logout()">Sair</button>
+        
       </div>
     </section>
 
@@ -146,18 +148,35 @@ function login() {
   auth.signInWithEmailAndPassword(email, password).catch(e => alert(e.message));
 }
 
+function loginGoogle() {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(e => alert(e.message));
+}
+
 function logout() { auth.signOut(); }
 
 auth.onAuthStateChanged(u => {
   user = u;
   if (unsubscribe) unsubscribe();
+
+  const loggedIn = !!u;
+  document.getElementById("loginFields").style.display = loggedIn ? "none" : "block";
+  document.getElementById("passwordField").style.display = loggedIn ? "none" : "block";
+  document.getElementById("loginBtn").style.display = loggedIn ? "none" : "inline-block";
+  document.getElementById("registerBtn").style.display = loggedIn ? "none" : "inline-block";
+  document.getElementById("googleBtn").style.display = loggedIn ? "none" : "inline-block";
+  document.getElementById("logoutBtn").style.display = loggedIn ? "inline-block" : "none";
+
   if (!u) {
     items = [];
-    setStatus("Faça login para salvar na nuvem.");
+    setStatus("🔴 Desconectado. Faça login para salvar na nuvem.");
     render();
     return;
   }
-  setStatus("Conectado: " + u.email + " | salvando online no Firebase.");
+
+  document.getElementById("email").value = "";
+  document.getElementById("password").value = "";
+  setStatus("🟢 Logado como: " + (u.displayName ? u.displayName + " — " : "") + u.email + " | Salvando online no Firebase.");
   listenData();
 });
 
