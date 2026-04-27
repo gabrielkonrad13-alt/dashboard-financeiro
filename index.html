@@ -329,14 +329,30 @@
   </section>
 
   <section id="comparativo" class="section">
+    <div class="panel" style="margin-bottom:16px">
+      <div class="toolbar">
+        <div>
+          <h2>Comparativo Pessoal x Empresas</h2>
+          <p class="status">Compare o mês selecionado e acompanhe também o acumulado anual.</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+          <div>
+            <label>Mês comparativo</label>
+            <input id="comparisonMonth" type="month" onchange="renderComparison()">
+          </div>
+          <button class="secondary" onclick="setComparisonCurrentMonth()">Mês atual</button>
+        </div>
+      </div>
+    </div>
+
     <div class="comparisonHero">
       <div class="panel">
-        <h2>Comparativo Pessoal x Empresas</h2>
-        <p class="status">Veja quanto entra nas empresas, quanto sai no pessoal e quanto foi retirado da empresa para uso pessoal.</p>
+        <h2>Visão mensal</h2>
+        <p class="status">Mostra apenas lançamentos do mês selecionado.</p>
         <div class="grid3" style="margin-top:16px">
-          <div class="card"><small>Total empresas</small><strong id="cmpEmpresas" class="positive comparisonBig">R$ 0,00</strong></div>
-          <div class="card"><small>Total pessoal</small><strong id="cmpPessoal" class="info comparisonBig">R$ 0,00</strong></div>
-          <div class="card"><small>Retiradas</small><strong id="cmpRetiradas" class="warning comparisonBig">R$ 0,00</strong></div>
+          <div class="card"><small>Saldo empresas mês</small><strong id="cmpEmpresas" class="positive comparisonBig">R$ 0,00</strong></div>
+          <div class="card"><small>Saldo pessoal mês</small><strong id="cmpPessoal" class="info comparisonBig">R$ 0,00</strong></div>
+          <div class="card"><small>Retiradas mês</small><strong id="cmpRetiradas" class="warning comparisonBig">R$ 0,00</strong></div>
         </div>
       </div>
       <div class="panel">
@@ -345,9 +361,15 @@
       </div>
     </div>
 
+    <div class="grid3">
+      <div class="card"><small>Entradas empresas anual</small><strong id="cmpEmpresasEntradasAno" class="positive">R$ 0,00</strong></div>
+      <div class="card"><small>Custos empresas anual</small><strong id="cmpEmpresasCustosAno" class="negative">R$ 0,00</strong></div>
+      <div class="card"><small>Retiradas anual</small><strong id="cmpRetiradasAno" class="warning">R$ 0,00</strong></div>
+    </div>
+
     <div class="grid2">
       <div class="panel">
-        <h2>Empresas cadastradas</h2>
+        <h2>Empresas cadastradas — mês</h2>
         <div style="overflow:auto">
           <table class="miniTable">
             <thead><tr><th>Empresa</th><th>Entradas</th><th>Saídas</th><th>Saldo</th><th>Retirada</th></tr></thead>
@@ -356,8 +378,18 @@
         </div>
       </div>
       <div class="panel">
-        <h2>Pessoal</h2>
+        <h2>Pessoal — mês e ano</h2>
         <div id="personalComparisonBox"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Empresas cadastradas — acumulado anual</h2>
+      <div style="overflow:auto">
+        <table class="miniTable">
+          <thead><tr><th>Empresa</th><th>Entradas ano</th><th>Saídas ano</th><th>Saldo ano</th><th>Retirada ano</th></tr></thead>
+          <tbody id="companyComparisonRowsYear"></tbody>
+        </table>
       </div>
     </div>
   </section>
@@ -824,19 +856,47 @@ async function addItem(){
 
 async function updateItem(id,field,value,el=null){
   if(!user)return;
+
   const item = items.find(x => x.id === id);
-  const parsed=field==="amount"?Number(String(value).replace(",",".").replace(/[^\d.-]/g,"")) || 0:String(value).trim();
+  const parsed = field==="amount"
+    ? Number(String(value).replace(",",".").replace(/[^\d.-]/g,"")) || 0
+    : String(value).trim();
 
-  const update = {[field]:parsed, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
+  const update = {[field]: parsed, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
 
-  if(item && (field === "dueDate" || field === "paymentMethod")){
-    const due = field === "dueDate" ? parsed : (item.dueDate || item.date);
+  if(item){
+    const oldDate = item.date || "";
+    const oldDue = item.dueDate || "";
     const method = field === "paymentMethod" ? parsed : (item.paymentMethod || "Pix");
-    update.expectedDate = calculateExpectedDate(due, method);
+
+    // Se alterar a data principal e o vencimento estava vazio ou igual à data antiga,
+    // o sistema entende que o vencimento deve acompanhar essa nova data.
+    if(field === "date"){
+      const shouldSyncDue = !oldDue || oldDue === oldDate;
+      if(shouldSyncDue){
+        update.dueDate = parsed;
+        update.expectedDate = calculateExpectedDate(parsed, method);
+      }
+    }
+
+    // Se alterar o vencimento, recalcula a previsão no caixa.
+    if(field === "dueDate"){
+      update.expectedDate = calculateExpectedDate(parsed, method);
+    }
+
+    // Se alterar a forma de pagamento, recalcula a previsão no caixa.
+    if(field === "paymentMethod"){
+      const due = item.dueDate || item.date || new Date().toISOString().slice(0,10);
+      update.expectedDate = calculateExpectedDate(due, parsed);
+    }
+
+    // Atualização local imediata para refletir em Entradas, Registros e Dashboard sem precisar recarregar.
+    Object.assign(item, update);
   }
 
   await collectionRef().doc(id).update(update);
   flashSaved(el);
+  render();
 }
 async function markPaid(id){
   if(!user)return;
@@ -1495,6 +1555,27 @@ function isWithdrawal(item){
   return item.type === "Retirada da Empresa" || text.includes("retirada") || text.includes("pro labore") || text.includes("prolabore") || text.includes("distribuicao");
 }
 
+function getComparisonMonth(){
+  const input = document.getElementById("comparisonMonth");
+  if(input && input.value) return input.value;
+  return getDashboardMonth();
+}
+
+function setComparisonCurrentMonth(){
+  const input = document.getElementById("comparisonMonth");
+  const now = new Date();
+  input.value = now.toISOString().slice(0,7);
+  renderComparison();
+}
+
+function filterByMonth(list, month){
+  return list.filter(item => itemMonth(item) === month);
+}
+
+function filterByYear(list, year){
+  return list.filter(item => itemYear(item) === year);
+}
+
 function sumItems(list){
   const entradas = list.filter(x=>isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
   const saidas = list.filter(x=>!isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
@@ -1511,40 +1592,74 @@ async function getCollectionItems(profileId){
 async function renderComparison(){
   if(!user) return;
   ensureCompanies();
-  const personalItems = await getCollectionItems("pessoal");
-  const personal = sumItems(personalItems);
 
-  let totalCompanies = {entradas:0, saidas:0, saldo:0, retiradas:0};
-  const rows = [];
+  const month = getComparisonMonth();
+  const year = month.slice(0,4);
+
+  const personalAll = await getCollectionItems("pessoal");
+  const personalMonth = sumItems(filterByMonth(personalAll, month));
+  const personalYear = sumItems(filterByYear(personalAll, year));
+
+  let totalCompaniesMonth = {entradas:0, saidas:0, saldo:0, retiradas:0};
+  let totalCompaniesYear = {entradas:0, saidas:0, saldo:0, retiradas:0};
+  const rowsMonth = [];
+  const rowsYear = [];
 
   for(const company of userSettings.companies){
-    const list = await getCollectionItems(company.id);
-    const s = sumItems(list);
-    totalCompanies.entradas += s.entradas;
-    totalCompanies.saidas += s.saidas;
-    totalCompanies.saldo += s.saldo;
-    totalCompanies.retiradas += s.retiradas;
-    rows.push({company, ...s});
+    const all = await getCollectionItems(company.id);
+    const monthSummary = sumItems(filterByMonth(all, month));
+    const yearSummary = sumItems(filterByYear(all, year));
+
+    totalCompaniesMonth.entradas += monthSummary.entradas;
+    totalCompaniesMonth.saidas += monthSummary.saidas;
+    totalCompaniesMonth.saldo += monthSummary.saldo;
+    totalCompaniesMonth.retiradas += monthSummary.retiradas;
+
+    totalCompaniesYear.entradas += yearSummary.entradas;
+    totalCompaniesYear.saidas += yearSummary.saidas;
+    totalCompaniesYear.saldo += yearSummary.saldo;
+    totalCompaniesYear.retiradas += yearSummary.retiradas;
+
+    rowsMonth.push({company, ...monthSummary});
+    rowsYear.push({company, ...yearSummary});
   }
 
-  document.getElementById("cmpEmpresas").textContent = brl(totalCompanies.saldo);
-  document.getElementById("cmpPessoal").textContent = brl(personal.saldo);
-  document.getElementById("cmpRetiradas").textContent = brl(totalCompanies.retiradas);
+  document.getElementById("cmpEmpresas").textContent = brl(totalCompaniesMonth.saldo);
+  document.getElementById("cmpPessoal").textContent = brl(personalMonth.saldo);
+  document.getElementById("cmpRetiradas").textContent = brl(totalCompaniesMonth.retiradas);
 
-  const withdrawalRate = totalCompanies.entradas ? (totalCompanies.retiradas / totalCompanies.entradas) * 100 : 0;
+  document.getElementById("cmpEmpresasEntradasAno").textContent = brl(totalCompaniesYear.entradas);
+  document.getElementById("cmpEmpresasCustosAno").textContent = brl(totalCompaniesYear.saidas);
+  document.getElementById("cmpRetiradasAno").textContent = brl(totalCompaniesYear.retiradas);
+
+  const withdrawalRateMonth = totalCompaniesMonth.entradas ? (totalCompaniesMonth.retiradas / totalCompaniesMonth.entradas) * 100 : 0;
+  const withdrawalRateYear = totalCompaniesYear.entradas ? (totalCompaniesYear.retiradas / totalCompaniesYear.entradas) * 100 : 0;
+
   let insight = "Sem dados suficientes ainda.";
-  if(totalCompanies.entradas > 0){
-    insight = `Você retirou ${withdrawalRate.toFixed(1)}% das entradas das empresas para o pessoal. `;
-    if(withdrawalRate <= 20) insight += "Retirada controlada em relação à receita.";
-    else if(withdrawalRate <= 40) insight += "Atenção: a retirada já pesa no caixa empresarial.";
-    else insight += "Alerta: retirada alta pode comprometer crescimento e capital de giro.";
+  if(totalCompaniesMonth.entradas > 0 || totalCompaniesYear.entradas > 0){
+    insight = `No mês, você retirou ${withdrawalRateMonth.toFixed(1)}% das entradas das empresas. No ano, ${withdrawalRateYear.toFixed(1)}%. `;
+    if(withdrawalRateMonth <= 20) insight += "Retirada mensal controlada.";
+    else if(withdrawalRateMonth <= 40) insight += "Atenção: a retirada mensal já pesa no caixa.";
+    else insight += "Alerta: retirada mensal alta pode comprometer capital de giro.";
   }
   document.getElementById("cmpInsight").textContent = insight;
 
-  const tbody = document.getElementById("companyComparisonRows");
-  tbody.innerHTML = rows.length ? "" : `<tr><td colspan="5" class="empty">Nenhuma empresa cadastrada.</td></tr>`;
-  rows.forEach(r => {
-    tbody.innerHTML += `<tr>
+  const tbodyMonth = document.getElementById("companyComparisonRows");
+  tbodyMonth.innerHTML = rowsMonth.length ? "" : `<tr><td colspan="5" class="empty">Nenhuma empresa cadastrada.</td></tr>`;
+  rowsMonth.forEach(r => {
+    tbodyMonth.innerHTML += `<tr>
+      <td>${safe(r.company.name)}</td>
+      <td class="positive">${brl(r.entradas)}</td>
+      <td class="negative">${brl(r.saidas)}</td>
+      <td class="${r.saldo >= 0 ? 'positive':'negative'}">${brl(r.saldo)}</td>
+      <td class="warning">${brl(r.retiradas)}</td>
+    </tr>`;
+  });
+
+  const tbodyYear = document.getElementById("companyComparisonRowsYear");
+  tbodyYear.innerHTML = rowsYear.length ? "" : `<tr><td colspan="5" class="empty">Nenhuma empresa cadastrada.</td></tr>`;
+  rowsYear.forEach(r => {
+    tbodyYear.innerHTML += `<tr>
       <td>${safe(r.company.name)}</td>
       <td class="positive">${brl(r.entradas)}</td>
       <td class="negative">${brl(r.saidas)}</td>
@@ -1555,9 +1670,10 @@ async function renderComparison(){
 
   document.getElementById("personalComparisonBox").innerHTML = `
     <div style="display:grid;gap:10px">
-      <div class="card"><small>Entradas pessoais</small><strong class="positive">${brl(personal.entradas)}</strong></div>
-      <div class="card"><small>Saídas pessoais</small><strong class="negative">${brl(personal.saidas)}</strong></div>
-      <div class="card"><small>Saldo pessoal</small><strong class="${personal.saldo >= 0 ? 'positive':'negative'}">${brl(personal.saldo)}</strong></div>
+      <div class="card"><small>Saldo pessoal mês</small><strong class="${personalMonth.saldo >= 0 ? 'positive':'negative'}">${brl(personalMonth.saldo)}</strong></div>
+      <div class="card"><small>Entradas pessoais ano</small><strong class="positive">${brl(personalYear.entradas)}</strong></div>
+      <div class="card"><small>Saídas pessoais ano</small><strong class="negative">${brl(personalYear.saidas)}</strong></div>
+      <div class="card"><small>Saldo pessoal ano</small><strong class="${personalYear.saldo >= 0 ? 'positive':'negative'}">${brl(personalYear.saldo)}</strong></div>
     </div>
   `;
 }
@@ -1578,6 +1694,7 @@ renderUserUI(null);
 renderCompanyName();
 clearForm();
 setCurrentMonth();
+if(document.getElementById('comparisonMonth')) document.getElementById('comparisonMonth').value = getDashboardMonth();
 render();
 </script>
 </body>
