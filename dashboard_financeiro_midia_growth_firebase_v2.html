@@ -1,61 +1,476 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard Financeiro | Mídia Growth</title>
+  <title>Finance Control | Dashboard Financeiro</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    :root {
-      --bg:#0b1020; --panel:#111827; --card:#1f2937; --line:rgba(255,255,255,.1);
-      --text:#f8fafc; --muted:#94a3b8; --green:#22c55e; --red:#ef4444; --blue:#38bdf8; --yellow:#f59e0b;
+    :root{
+      --bg:#171b22;--sidebar:rgba(10,14,25,.92);--panel:rgba(28,33,46,.82);--panel2:rgba(35,42,58,.88);--line:rgba(255,255,255,.09);
+      --text:#f3f6fb;--muted:#8f9aaa;--green:#16c7a8;--red:#ff6b4a;--blue:#38bdf8;--yellow:#f59e0b;--purple:#8b5cf6;
+      --radius:18px;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Arial, sans-serif;background:radial-gradient(circle at top left,rgba(56,189,248,.16),transparent 35%),var(--bg);color:var(--text)}
-    .app{max-width:1280px;margin:auto;padding:28px}
-    header{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px}
-    h1{margin:0;font-size:32px;letter-spacing:-.04em} p{color:var(--muted)}
-    .auth,.panel,.card{background:rgba(17,24,39,.9);border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
-    .auth{padding:18px;display:grid;grid-template-columns:1fr 1fr auto auto auto auto;gap:10px;align-items:end;margin-bottom:18px}
-    label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase;margin-bottom:6px}
-    input,select,textarea{width:100%;border:1px solid var(--line);background:#0f172a;color:var(--text);padding:12px;border-radius:12px;outline:none}
-    textarea{min-height:70px;resize:vertical}
-    button{border:0;border-radius:14px;padding:12px 14px;color:white;font-weight:800;cursor:pointer}
-    .primary{background:linear-gradient(135deg,#2563eb,#7c3aed)} .secondary{background:#334155} .danger{background:#b91c1c}
-    .tabs{display:flex;gap:8px;background:rgba(255,255,255,.06);padding:8px;border-radius:999px;border:1px solid var(--line)}
-    .tab{background:transparent;color:var(--muted);border-radius:999px} .tab.active{background:white;color:#020617}
-    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
-    .card{padding:18px} .card small{color:var(--muted);font-weight:800;text-transform:uppercase;font-size:11px} .card strong{display:block;font-size:24px;margin-top:10px}
-    .positive{color:var(--green)} .negative{color:var(--red)} .info{color:var(--blue)} .warning{color:var(--yellow)}
-    .layout{display:grid;grid-template-columns:420px 1fr;gap:18px;align-items:start}
-    .panel{padding:18px} .panel h2{margin:0 0 14px;font-size:18px}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    body{margin:0;font-family:Inter,Arial,sans-serif;background:radial-gradient(circle at top left,rgba(22,199,168,.16),transparent 28%),radial-gradient(circle at top right,rgba(139,92,246,.16),transparent 28%),var(--bg);color:var(--text)}
+    .app{display:grid;grid-template-columns:250px 1fr;min-height:100vh;max-width:none;padding:0;margin:0}
+    .sidebar{background:var(--sidebar);backdrop-filter:blur(18px);border-right:1px solid var(--line);padding:22px 16px;position:sticky;top:0;height:100vh;overflow:auto}
+    .brand{font-size:22px;font-weight:900;line-height:1;letter-spacing:-.04em;margin-bottom:22px}
+    .brand span{color:var(--green)}
+    .sideLabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:22px 10px 8px}
+    .navTabs{display:flex;flex-direction:column;gap:6px;background:transparent;border:0;padding:0;width:100%}
+    .navTab{width:100%;text-align:left;background:transparent;color:var(--muted);border-radius:8px;padding:12px 14px}
+    .navTab.active{background:rgba(22,199,168,.14);color:var(--green);border-left:3px solid var(--green)}
+    .profileTabs{display:flex;flex-direction:column;gap:6px;background:transparent;border:0;padding:0;width:100%}
+    .tab{width:100%;text-align:left;background:transparent;color:var(--muted);border-radius:8px;padding:12px 14px}
+    .tab.active{background:linear-gradient(135deg,rgba(22,199,168,.18),rgba(139,92,246,.16));color:var(--text);border:1px solid rgba(255,255,255,.10)}
+    .main{padding:28px;overflow:hidden}
+    header{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:18px}
+    h1{margin:0;font-size:30px;letter-spacing:-.04em}.subtitle{color:var(--muted);margin:8px 0 0}
+    button{border:0;border-radius:8px;padding:11px 13px;color:white;font-weight:800;cursor:pointer}
+    .primary{background:linear-gradient(135deg,var(--green),#6ee7b7);color:#07110f}.secondary{background:#313946}.danger{background:#b93b31}.success{background:#15803d}.smallBtn{padding:8px 10px;border-radius:8px;font-size:12px}
+    .auth,.panel,.card,.mobileCard{background:var(--panel);backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 20px 60px rgba(0,0,0,.18)}
+    .auth{padding:16px;display:grid;grid-template-columns:1fr 1fr auto auto auto auto;gap:10px;align-items:end;margin-bottom:18px}
+    label{display:block;color:var(--muted);font-size:11px;font-weight:800;text-transform:uppercase;margin:12px 0 6px;letter-spacing:.04em}
+    input,select,textarea{width:100%;border:1px solid var(--line);background:#171c24;color:var(--text);padding:11px;border-radius:8px;outline:none}
+    textarea{min-height:72px;resize:vertical}.status{font-size:13px;color:var(--muted)}
+    .section{display:none}.section.active{display:block}
+    .grid4{display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:16px;margin:18px 0}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+    .card{padding:22px;min-height:122px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}.card:before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.06),transparent 40%);pointer-events:none}
+    .card small{color:var(--muted);font-weight:800;text-transform:uppercase;font-size:11px}
+    .card strong{display:block;font-size:27px;margin-top:12px;letter-spacing:-.04em}
+    .positive{color:var(--green)}.negative{color:var(--red)}.info{color:var(--blue)}.warning{color:var(--yellow)}
+    .panel{padding:20px;margin-bottom:16px}.panel h2{margin:0 0 14px;font-size:19px}.panel h3{margin:0 0 10px;font-size:16px;color:var(--muted)}
+    .formGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.full{grid-column:1/-1}
     .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-    .charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px} .chartBox{min-height:280px}
-    table{width:100%;border-collapse:collapse;font-size:14px} th,td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-    th{color:var(--muted);font-size:11px;text-transform:uppercase;background:rgba(255,255,255,.04)} td[contenteditable=true]{background:rgba(255,255,255,.025);border-radius:8px;outline:none}
-    .pill{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(255,255,255,.08)}
-    .status{font-size:13px;color:var(--muted)} .empty{text-align:center;color:var(--muted);padding:28px}
-    @media(max-width:980px){header,.layout{display:block}.grid,.charts,.auth{grid-template-columns:1fr}.panel{margin-bottom:18px}}
+    table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:13px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+    th{color:var(--muted);font-size:11px;text-transform:uppercase;background:rgba(255,255,255,.03)}td[contenteditable=true]{background:rgba(255,255,255,.025);border-radius:8px;outline:none}
+    .pill{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(255,255,255,.08)}.empty{text-align:center;color:var(--muted);padding:28px}
+    .chartBox{min-height:360px}.chartBox canvas{max-height:295px}.toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+    .hint{font-size:12px;color:var(--muted);line-height:1.4;margin-top:8px}.mobileList{display:none}.mobileCard{padding:14px;margin-bottom:12px}.mobileCardTop{display:flex;justify-content:space-between;gap:12px}.mobileCard p{margin:6px 0;color:var(--muted);font-size:13px}
+    .overdue{border-left:4px solid var(--red)}.paid{border-left:4px solid var(--green)}.pending{border-left:4px solid var(--yellow)}
+    .wideTableWrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:#191f27}
+    .wideTable{min-width:1450px}
+    .wideTable td,.wideTable th{white-space:nowrap}
+    .wideTable td.descCell,.wideTable td.notesCell{white-space:normal;min-width:280px}
+    .wideTable select{min-width:150px;padding:8px;border-radius:8px}
+    .wideTable input{min-width:130px;padding:8px;border-radius:8px}
+    .editHint{background:rgba(22,199,168,.08);border:1px solid rgba(22,199,168,.18);padding:12px;border-radius:10px;margin:0 0 12px;color:var(--muted);font-size:13px}
+    .savedFlash{animation:savedFlash .75s ease}
+    @keyframes savedFlash{0%{background:rgba(34,197,94,.35)}100%{background:transparent}}
+    .metricSub{font-size:12px;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+    @media(max-width:1100px){.app{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.main{padding:18px}.navTabs,.profileTabs{flex-direction:row;overflow:auto}.navTab,.tab{text-align:center;min-width:max-content}.grid2,.grid3{grid-template-columns:1fr}.grid4{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:700px){.grid4,.formGrid,.auth{grid-template-columns:1fr}.desktopTable{display:none}.mobileList{display:block}.app{padding:0}h1{font-size:26px}.main{padding:14px}}
+  
+    .userBox{display:flex;gap:12px;align-items:center;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:18px;padding:12px;margin-bottom:18px}
+    .avatar{width:46px;height:46px;border-radius:50%;object-fit:cover;background:linear-gradient(135deg,var(--green),var(--purple));display:grid;place-items:center;font-weight:900;color:#07110f;flex:0 0 auto}
+    .userMeta{min-width:0}
+    .userMeta strong{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .userMeta span{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .companyBox{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:10px}
+    .companyBox input{margin-top:8px}
+    .companyBox button{width:100%;margin-top:8px}
+    .topUser{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:999px;padding:8px 12px}
+    .topUser .avatar{width:34px;height:34px;font-size:13px}
+    .topUser span{font-size:13px;color:var(--muted)}
+
+  
+    .modalOverlay{position:fixed;inset:0;background:rgba(0,0,0,.62);display:none;align-items:center;justify-content:center;z-index:9999;padding:18px}
+    .modalOverlay.active{display:flex}
+    .modal{width:min(760px,100%);background:var(--panel2);border:1px solid var(--line);border-radius:24px;padding:22px;box-shadow:0 30px 90px rgba(0,0,0,.45)}
+    .modalHeader{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px}
+    .modalHeader h2{margin:0}
+    .profilePreview{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:14px}
+    .profilePreview .avatar{width:64px;height:64px}
+    .sideButton{width:100%;text-align:left;background:rgba(255,255,255,.06);color:var(--text);margin-top:8px}
+
+  
+    .companyList{display:flex;flex-direction:column;gap:6px}
+    .companyActions{display:flex;gap:8px;margin-top:10px}
+    .companyActions button{flex:1}
+    .comparisonHero{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
+    .comparisonBig{font-size:42px!important}
+    .miniTable{width:100%;font-size:13px}
+    .miniTable td,.miniTable th{padding:10px;border-bottom:1px solid var(--line)}
+    .addCompanyBox{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:10px}
+    @media(max-width:900px){.comparisonHero{grid-template-columns:1fr}}
+  
+    .quickTypeBtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .quickChip{padding:7px 9px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--muted);font-size:11px;border:1px solid var(--line)}
+    .quickChip:hover{color:var(--text);background:rgba(22,199,168,.14)}
+    .costHelp{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.18);padding:12px;border-radius:12px;color:var(--muted);font-size:13px;margin-top:12px}
+  
+    .cleanTable{min-width:1100px}
+    .cleanTable td,.cleanTable th{white-space:nowrap}
+    .cleanTable .descRead{white-space:normal;min-width:260px}
+    .editModalGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .editModalGrid .full{grid-column:1/-1}
+    .modalWide{width:min(920px,100%)}
+    @media(max-width:800px){.editModalGrid{grid-template-columns:1fr}}
+  
+    .shortDesc{cursor:pointer;color:var(--text);font-weight:800;text-decoration:none}
+    .shortDesc:hover{color:var(--green);text-decoration:underline}
+    .viewTextBox{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:14px;padding:14px;line-height:1.5;white-space:pre-wrap}
+  
+    /* v20 — Mobile app + Horizon inspired polish */
+    html,body{max-width:100%;overflow-x:hidden}
+    .main{position:relative}
+    .panel,.card,.auth,.mobileCard,.modal{background:linear-gradient(180deg,rgba(35,42,58,.86),rgba(20,25,36,.82));border:1px solid rgba(255,255,255,.10)}
+    .panel h2,.card strong{letter-spacing:-.03em}
+    .section.active{animation:sectionIn .22s ease}
+    @keyframes sectionIn{from{opacity:.2;transform:translateY(8px)}to{opacity:1;transform:none}}
+    .navTab,.tab,.sideButton,.quickChip{transition:.18s ease}
+    .navTab:hover,.tab:hover,.sideButton:hover{transform:translateX(2px);background:rgba(255,255,255,.08)}
+    .card{border-radius:24px}
+    .panel{border-radius:24px}
+    .wideTableWrap{border-radius:20px}
+
+    .mobileEditBtn{background:linear-gradient(135deg,var(--green),#6ee7b7);color:#06110e}
+    .mobileDetailsBtn{background:rgba(255,255,255,.08);color:var(--text)}
+    .typingHelper{
+      display:none;
+      position:fixed;
+      left:12px;
+      right:12px;
+      bottom:calc(env(safe-area-inset-bottom) + 82px);
+      z-index:9998;
+      background:rgba(16,24,39,.94);
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:18px;
+      padding:10px 12px;
+      color:var(--muted);
+      font-size:12px;
+      backdrop-filter:blur(18px);
+      box-shadow:0 20px 60px rgba(0,0,0,.35);
+    }
+    body.typingMode .typingHelper{display:block}
+
+    @media(max-width:700px){
+      :root{--radius:22px}
+      body{
+        background:
+          radial-gradient(circle at top left,rgba(22,199,168,.18),transparent 30%),
+          radial-gradient(circle at 80% 10%,rgba(139,92,246,.20),transparent 32%),
+          #090d18;
+        min-height:100svh;
+      }
+      .app{
+        display:block;
+        min-height:100svh;
+        width:100%;
+        overflow-x:hidden;
+      }
+      .sidebar{
+        position:relative;
+        height:auto;
+        padding:16px 14px 10px;
+        border-right:0;
+        border-bottom:1px solid var(--line);
+        background:rgba(7,11,22,.82);
+        backdrop-filter:blur(22px);
+      }
+      .brand{font-size:18px;margin-bottom:12px}
+      .userBox{
+        margin-bottom:12px;
+        border-radius:22px;
+        background:linear-gradient(135deg,rgba(22,199,168,.12),rgba(139,92,246,.12));
+      }
+      .sideLabel{display:none}
+      .companyBox,.addCompanyBox,.sideButton{
+        display:none;
+      }
+      .profileTabs{
+        flex-direction:row;
+        overflow-x:auto;
+        gap:8px;
+        padding-bottom:4px;
+        scrollbar-width:none;
+      }
+      .profileTabs::-webkit-scrollbar{display:none}
+      .tab{
+        white-space:nowrap;
+        min-width:max-content;
+        padding:10px 14px;
+        border-radius:999px;
+        background:rgba(255,255,255,.05);
+      }
+      .main{
+        padding:14px;
+        padding-bottom:calc(env(safe-area-inset-bottom) + 96px);
+        width:100%;
+      }
+      header{
+        align-items:center;
+        margin-bottom:12px;
+      }
+      header h1{font-size:24px}
+      .subtitle{font-size:13px}
+      .topUser{display:none}
+      .auth{
+        grid-template-columns:1fr;
+        padding:14px;
+        border-radius:24px;
+      }
+      .auth button{width:100%}
+      .navTabs{
+        position:fixed;
+        left:10px;
+        right:10px;
+        bottom:calc(env(safe-area-inset-bottom) + 10px);
+        z-index:9990;
+        display:grid;
+        grid-template-columns:repeat(5,1fr);
+        gap:6px;
+        width:auto;
+        padding:8px;
+        border-radius:24px;
+        background:rgba(10,14,25,.86);
+        backdrop-filter:blur(22px);
+        border:1px solid rgba(255,255,255,.12);
+        box-shadow:0 20px 70px rgba(0,0,0,.45);
+      }
+      .navTab{
+        text-align:center;
+        min-width:0;
+        padding:10px 6px;
+        font-size:11px;
+        border-radius:18px;
+      }
+      .navTab.active{
+        border-left:0;
+        background:linear-gradient(135deg,rgba(22,199,168,.24),rgba(139,92,246,.20));
+        color:var(--text);
+      }
+      .grid4,.grid3,.grid2{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:12px;
+      }
+      .card{
+        min-height:auto;
+        padding:18px;
+        border-radius:26px;
+      }
+      .card strong{font-size:25px}
+      .panel{
+        padding:16px;
+        border-radius:26px;
+        margin-bottom:12px;
+      }
+      .formGrid,.editModalGrid{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:10px;
+      }
+      input,select,textarea{
+        font-size:16px;
+        min-height:46px;
+        border-radius:16px;
+      }
+      textarea{min-height:96px}
+      input:focus,select:focus,textarea:focus{
+        border-color:rgba(22,199,168,.65);
+        box-shadow:0 0 0 4px rgba(22,199,168,.12);
+      }
+      body.typingMode .modal{
+        transform:translateY(-4px);
+      }
+      .desktopTable{display:none!important}
+      .mobileList{display:block!important}
+      .mobileCard{
+        border-radius:24px;
+        background:linear-gradient(180deg,rgba(35,42,58,.94),rgba(18,23,34,.92));
+        border:1px solid rgba(255,255,255,.10);
+        padding:16px;
+        box-shadow:0 18px 50px rgba(0,0,0,.22);
+      }
+      .mobileCardTop strong:first-child{
+        max-width:62%;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+      }
+      .mobileCard .btns{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:8px;
+      }
+      .mobileCard .btns button,.mobileCard .btns .pill{
+        width:100%;
+        justify-content:center;
+        text-align:center;
+      }
+      .modalOverlay{
+        align-items:stretch;
+        justify-content:stretch;
+        padding:0;
+      }
+      .modal{
+        width:100%;
+        max-width:none;
+        min-height:100svh;
+        border-radius:0;
+        border:0;
+        padding:18px 14px calc(env(safe-area-inset-bottom) + 98px);
+        overflow:auto;
+      }
+      .modalHeader{
+        position:sticky;
+        top:0;
+        z-index:2;
+        background:rgba(20,25,36,.94);
+        backdrop-filter:blur(18px);
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:20px;
+        padding:10px;
+      }
+      .modalHeader h2{font-size:20px}
+      .modal .btns{
+        position:sticky;
+        bottom:calc(env(safe-area-inset-bottom) + 76px);
+        z-index:2;
+        background:rgba(20,25,36,.94);
+        backdrop-filter:blur(18px);
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:20px;
+        padding:10px;
+        display:grid;
+        grid-template-columns:1fr;
+      }
+      .toolbar{
+        align-items:stretch;
+      }
+      .toolbar > div:last-child{
+        width:100%;
+      }
+      .toolbar input[type="month"]{
+        width:100%;
+      }
+      .chartBox{min-height:auto}
+      .chartBox canvas{max-height:260px}
+      .quickTypeBtns{gap:8px}
+      .quickChip{font-size:12px;padding:9px 10px}
+    }
+
+  
+    /* v21 — smarter finance, search, launch groups and modern date helpers */
+    .searchBox{
+      display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.05);
+      border:1px solid var(--line);border-radius:999px;padding:8px 12px;min-width:280px
+    }
+    .searchBox input{border:0;background:transparent;padding:6px;min-height:auto}
+    .searchResults{
+      position:fixed;right:28px;top:82px;width:min(420px,calc(100vw - 32px));z-index:9997;
+      background:rgba(16,24,39,.96);backdrop-filter:blur(20px);border:1px solid var(--line);
+      border-radius:18px;box-shadow:0 30px 90px rgba(0,0,0,.4);display:none;overflow:hidden
+    }
+    .searchResults.active{display:block}
+    .searchItem{padding:13px 15px;border-bottom:1px solid var(--line);cursor:pointer}
+    .searchItem:hover{background:rgba(22,199,168,.10)}
+    .searchItem strong{display:block}.searchItem span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+    .healthPanel{
+      display:flex;justify-content:space-between;align-items:center;gap:16px;
+      background:linear-gradient(135deg,rgba(22,199,168,.12),rgba(139,92,246,.12));
+      border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:18px;margin-bottom:16px
+    }
+    .healthPanel.risk{background:linear-gradient(135deg,rgba(255,107,74,.16),rgba(245,158,11,.10))}
+    .healthPanel.warning{background:linear-gradient(135deg,rgba(245,158,11,.14),rgba(139,92,246,.08))}
+    .healthIcon{width:44px;height:44px;border-radius:16px;display:grid;place-items:center;background:rgba(255,255,255,.08);font-size:22px}
+    .healthText strong{display:block;font-size:17px}.healthText span{display:block;color:var(--muted);font-size:13px;margin-top:4px}
+    .launchGroup{
+      background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:20px;
+      padding:16px;margin-bottom:14px
+    }
+    .launchGroup h3{margin:0 0 10px;color:var(--text);font-size:16px}
+    .dateTools{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .dateChip{padding:7px 9px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--muted);font-size:11px;border:1px solid var(--line)}
+    .dateChip:hover{background:rgba(22,199,168,.14);color:var(--text)}
+    .bulkPreviewTable input,.bulkPreviewTable select{min-width:130px;padding:8px;border-radius:10px}
+    .bulkPreviewTable textarea{min-width:240px;min-height:48px;padding:8px}
+    .bulkPreviewTable{min-width:1050px}
+    .platformSearchMobile{display:none}
+    @media(max-width:700px){
+      .searchBox{min-width:0;width:100%;border-radius:18px}
+      .searchResults{left:12px;right:12px;top:92px;width:auto}
+      .platformSearchMobile{display:block;margin-bottom:12px}
+      header .searchBox{display:none}
+      .healthPanel{align-items:flex-start;border-radius:26px}
+      .launchGroup{border-radius:24px;padding:14px}
+      .dateTools{display:grid;grid-template-columns:1fr 1fr}
+      .dateChip{font-size:12px;padding:10px}
+      .bulkPreviewTable{min-width:900px}
+    }
+
   </style>
 </head>
 <body>
 <div class="app">
+  <aside class="sidebar">
+    <div class="brand">Finance<span>Control</span></div>
+
+    <div class="userBox">
+      <div id="userAvatar" class="avatar">?</div>
+      <div class="userMeta">
+        <strong id="userName">Usuário</strong>
+        <span id="userEmail">Desconectado</span>
+      </div>
+    </div>
+
+    <div class="sideLabel">Área</div>
+    <div id="profileTabs" class="profileTabs companyList"></div>
+
+    <div class="addCompanyBox">
+      <label>Adicionar empresa</label>
+      <input id="newCompanyName" placeholder="Nome da empresa">
+      <div class="companyActions">
+        <button class="secondary" onclick="addCompany()">Adicionar</button>
+      </div>
+    </div>
+
+    <div class="companyBox">
+      <label>Nome da empresa atual</label>
+      <input id="companyNameInput" placeholder="Empresa">
+      <button class="secondary" onclick="saveCompanyName()">Salvar nome</button>
+    </div>
+
+    <button class="sideButton" onclick="openProfileModal()">Editar perfil</button>
+
+    <div class="sideLabel">Menu</div>
+    <nav class="navTabs">
+      <button class="navTab active" onclick="setSection(event,'visao')">Dashboard</button>
+      <button class="navTab" onclick="setSection(event,'lancamentos')">Lançamentos</button>
+      <button class="navTab" onclick="setSection(event,'registros')">Registros</button>
+      <button class="navTab" onclick="setSection(event,'relatorios')">Relatórios</button>
+      <button class="navTab" onclick="setSection(event,'comparativo')">Comparativo</button>
+    </nav>
+
+    <div class="sideLabel">Sistema</div>
+    <p class="status">Dados salvos no Firebase em tempo real.</p>
+  </aside>
+
+  <main class="main">
   <header>
     <div>
-      <h1>Dashboard Financeiro</h1>
-      <p>Salvamento online no Firebase: Pessoal + Mídia Growth.</p>
+      <h1>Dashboard</h1>
+      <p class="subtitle">Gestão financeira empresarial e pessoal.</p>
     </div>
-    <div class="tabs">
-      <button class="tab active" onclick="setProfile('pessoal')">Pessoal</button>
-      <button class="tab" onclick="setProfile('midia')">Mídia Growth</button>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+      <div class="searchBox">
+        <span>🔎</span>
+        <input id="platformSearch" placeholder="Pesquisar na plataforma..." oninput="handlePlatformSearch(this.value)">
+      </div>
+      <div class="topUser">
+        <div id="topAvatar" class="avatar">?</div>
+        <span id="topUserLabel">Faça login</span>
+      </div>
     </div>
   </header>
 
-  <section class="auth" id="authBox">
+  <section class="auth">
     <div id="loginFields"><label>Email</label><input id="email" type="email" placeholder="seuemail@gmail.com"></div>
     <div id="passwordField"><label>Senha</label><input id="password" type="password" placeholder="mínimo 6 caracteres"></div>
     <button class="primary" id="loginBtn" onclick="login()">Entrar</button>
@@ -65,50 +480,448 @@
     <div class="status" id="status" style="grid-column:1/-1">Faça login para salvar na nuvem.</div>
   </section>
 
-  <section class="grid">
-    <div class="card"><small>Entradas totais</small><strong id="totalEntradas" class="positive">R$ 0,00</strong></div>
-    <div class="card"><small>Saídas totais</small><strong id="totalSaidas" class="negative">R$ 0,00</strong></div>
-    <div class="card"><small>Fluxo / Saldo</small><strong id="saldo" class="info">R$ 0,00</strong></div>
-    <div class="card"><small>Custos fixos</small><strong id="fixos" class="warning">R$ 0,00</strong></div>
+
+  <section id="visao" class="section active">
+    <div class="panel" style="margin-bottom:16px">
+      <div class="toolbar">
+        <div>
+          <h2>Período do dashboard</h2>
+          <p class="status">O painel principal mostra apenas o mês selecionado. Os totais anuais aparecem em cards separados.</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+          <div>
+            <label>Mês</label>
+            <input id="dashboardMonth" type="month" onchange="render()">
+          </div>
+          <button class="secondary" onclick="setCurrentMonth()">Mês atual</button>
+        </div>
+      </div>
+    </div>
+    <div id="financialHealthPanel" class="healthPanel">
+      <div style="display:flex;gap:14px;align-items:center">
+        <div id="financialHealthIcon" class="healthIcon">💚</div>
+        <div class="healthText">
+          <strong id="financialHealthTitle">Analisando sua saúde financeira...</strong>
+          <span id="financialHealthMessage">Os indicadores serão atualizados conforme seus lançamentos.</span>
+        </div>
+      </div>
+      <button class="secondary" onclick="setSectionById('registros')">Ver registros</button>
+    </div>
+
+    <div class="grid4">
+      <div class="card"><div><small>Receitas do período</small><strong id="totalEntradas" class="positive">R$ 0,00</strong></div><div class="metricSub">Entradas fixas + variáveis</div></div>
+      <div class="card"><div><small>Despesas do período</small><strong id="totalSaidas" class="negative">R$ 0,00</strong></div><div class="metricSub">Saídas + custos</div></div>
+      <div class="card"><div><small>Resultado operacional</small><strong id="saldo" class="info">R$ 0,00</strong></div><div class="metricSub">Entradas menos saídas</div></div>
+      <div class="card"><div><small>A receber</small><strong id="aReceber" class="warning">R$ 0,00</strong></div><div class="metricSub">Valores ainda pendentes</div></div>
+    </div>
+    <div class="grid4">
+      <div class="card"><small>Custos do mês</small><strong id="fixos" class="warning">R$ 0,00</strong></div>
+      <div class="card"><small>A pagar no mês</small><strong id="aPagar" class="negative">R$ 0,00</strong></div>
+      <div class="card"><small>Entradas anuais</small><strong id="entradasAno" class="positive">R$ 0,00</strong></div>
+      <div class="card"><small>Custos anuais</small><strong id="custosAno" class="negative">R$ 0,00</strong></div>
+    </div>
+    <div class="grid2">
+      <div class="panel chartBox"><h2>Resultado por categoria</h2><p class="status">Distribuição financeira por categoria</p><canvas id="categoryChart"></canvas></div>
+      <div class="panel chartBox"><h2>Entradas vs Saídas</h2><p class="status">Comparativo por tipo de movimentação</p><canvas id="flowChart"></canvas></div>
+    </div>
   </section>
 
-  <main class="layout">
-    <section class="panel">
+  <section id="lancamentos" class="section">
+    <div class="panel">
       <h2>Novo lançamento</h2>
-      <label>Data</label><input id="date" type="date"/>
-      <label>Descrição</label><input id="description" placeholder="Ex: Cliente X, aluguel, ferramenta..."/>
-      <div class="row">
-        <div><label>Tipo</label><select id="type">
-          <option>Entrada Fixa</option><option>Entrada Variável</option><option>Saída</option><option>Custo Fixo</option><option>Custo Variável</option>
-        </select></div>
-        <div><label>Valor</label><input id="amount" type="number" step="0.01" placeholder="0,00"/></div>
-      </div>
-      <label>Categoria</label><input id="category" placeholder="Cliente, tráfego, aluguel, alimentação..."/>
-      <label>Observação</label><textarea id="notes" placeholder="Detalhes, vencimento, responsável, contrato..."></textarea>
-      <div class="btns">
-        <button class="primary" onclick="addItem()">Adicionar</button>
-        <button class="secondary" onclick="exportCSV()">Exportar CSV</button>
-        
-      </div>
-    </section>
 
-    <section>
-      <div class="charts">
-        <div class="panel chartBox"><h2>Fluxo por categoria</h2><canvas id="categoryChart"></canvas></div>
-        <div class="panel chartBox"><h2>Entradas x Saídas</h2><canvas id="flowChart"></canvas></div>
+      <div class="launchGroup">
+        <h3>1. Datas e fluxo</h3>
+        <div class="formGrid">
+        <div><label>Data de emissão/lançamento</label><input id="date" type="date"/></div>
+        <div><label>Vencimento</label><input id="dueDate" type="date" onchange="updateExpectedDate()"/></div>
+        <div><label>Data prevista no caixa</label><input id="expectedDate" type="date"/></div>
+        </div>
+      </div>
+
+      <div class="launchGroup">
+        <h3>2. Identificação</h3>
+        <div class="formGrid">
+        <div class="full"><label>Descrição</label><input id="description" placeholder="Ex: Cliente X, aluguel, ferramenta, conta..."/></div>
+        <div>
+  <label>Tipo de lançamento</label>
+  <select id="type" onchange="applyTypePreset()">
+    <option>Entrada Fixa</option>
+    <option>Entrada Variável</option>
+    <option>Saída</option>
+    <option>Custo Fixo</option>
+    <option>Custo Variável</option>
+    <option>Retirada da Empresa</option>
+  </select>
+  <div class="quickTypeBtns">
+    <button type="button" class="quickChip" onclick="setQuickType('Custo Fixo')">+ Custo fixo</button>
+    <button type="button" class="quickChip" onclick="setQuickType('Custo Variável')">+ Custo variável</button>
+    <button type="button" class="quickChip" onclick="setQuickType('Saída')">+ Conta/saída</button>
+  </div>
+</div>
+        <div><label>Valor</label><input id="amount" type="number" step="0.01" placeholder="0,00"/></div>
+        <div><label>Categoria</label><input id="category" placeholder="Cliente, tráfego, aluguel, alimentação..."/></div>
+        </div>
+      </div>
+
+      <div class="launchGroup">
+        <h3>3. Financeiro e classificação</h3>
+        <div class="formGrid">
+        <div><label>Status</label><select id="paymentStatus"><option>Pendente</option><option>Previsto</option><option>Pago/Recebido</option><option>Atrasado</option></select></div>
+        <div><label>Forma de pagamento</label><select id="paymentMethod" onchange="updateExpectedDate()"><option>Pix</option><option>Boleto</option><option>Cartão de crédito</option><option>Cartão de débito</option><option>Dinheiro</option><option>Transferência</option><option>Outro</option></select></div>
+        <div><label>Recorrência</label><select id="recurrence" onchange="toggleRecurrenceHint()"><option>Não recorrente</option><option>Mensal</option><option>Semanal</option><option>Anual</option></select></div>
+        <div><label>Quantidade de parcelas/meses</label><input id="recurrenceCount" type="number" min="1" value="1"/></div>
+        <div><label>Responsável</label><input id="owner" placeholder="Gabriel, cliente, fornecedor..."/></div>
+        </div>
+      </div>
+
+      <div class="launchGroup">
+        <h3>4. Recorrência e observações</h3>
+        <div class="formGrid">
+        <div class="full">
+          <p class="hint" id="recurrenceHint">Pagamento único: será criado apenas 1 lançamento.</p>
+          <p class="hint">Boleto: a data prevista no caixa é calculada automaticamente considerando compensação e fim de semana. Ex: vencendo sexta, previsão cai na segunda.</p>
+          <div class="costHelp">
+            Para registrar custos, escolha <strong>Custo Fixo</strong> para despesas recorrentes como ferramentas, aluguel, internet e salários.
+            Escolha <strong>Custo Variável</strong> para gastos pontuais como freelancers, compras, produção, deslocamento e demandas específicas.
+          </div>
+        </div>
+        <div class="full"><label>Observação</label><textarea id="notes" placeholder="Detalhes, contrato, responsável, motivo, etc."></textarea></div>
+        </div>
+      </div>
+      <div class="btns">
+        <button class="primary" onclick="addItem()">Adicionar lançamento</button>
+        <button class="secondary" onclick="clearForm()">Limpar campos</button>
+      </div>
+
+      <div class="panel" style="margin-top:18px;background:rgba(255,255,255,.035)">
+        <h2>Importar planilha CSV</h2>
+        <p class="hint">
+          Envie um CSV com colunas como: descrição, valor, tipo, vencimento, categoria, status, pagamento, recorrência.
+          Se já existir um lançamento com mesma descrição + tipo + vencimento + valor, ele será substituído/atualizado.
+        </p>
+        <input id="csvFile" type="file" accept=".csv,text/csv" />
+        <div class="btns">
+          <button class="primary" onclick="importCSV()">Importar CSV</button>
+          <button class="secondary" onclick="downloadCSVModel()">Baixar modelo CSV</button>
+        </div>
+        <p class="hint" id="importStatus"></p>
+      </div>
+
+      <div class="panel" style="margin-top:18px;background:rgba(255,255,255,.035)">
+        <h2>Importar por texto</h2>
+        <p class="hint">
+          Cole várias linhas copiadas da planilha. Exemplo: Cliente | Cobrança Recorrente | R$ 1.500 | Gestão de tráfego.
+          O sistema identifica cliente, valor, recorrência e descrição automaticamente.
+        </p>
+        <textarea id="bulkText" placeholder="BeiCapelli Cobrança Recorrente R$ 375 Gestão de tráfego&#10;Ivanete Arruda Carvalho Cobrança Recorrente R$ 100 Mensalidade Site"></textarea>
+        <div class="formGrid">
+          <div><label>Tipo padrão</label><select id="bulkType"><option>Entrada Fixa</option><option>Entrada Variável</option><option>Saída</option><option>Custo Fixo</option><option>Custo Variável</option><option>Retirada da Empresa</option></select></div>
+          <div><label>Status padrão</label><select id="bulkStatus"><option>Pendente</option><option>Previsto</option><option>Pago/Recebido</option></select></div>
+          <div><label>Forma padrão</label><select id="bulkPayment"><option>Pix</option><option>Boleto</option><option>Transferência</option><option>Cartão de crédito</option><option>Outro</option></select></div>
+          <div><label>Vencimento padrão</label><input id="bulkDueDate" type="date"></div>
+          <div><label>Meses recorrentes</label><input id="bulkMonths" type="number" min="1" value="1"></div>
+          <div><label>Categoria padrão</label><input id="bulkCategory" value="Cliente"></div>
+        </div>
+        <div class="btns">
+          <button class="primary" onclick="previewBulkText()">Pré-visualizar texto</button>
+          <button class="secondary" onclick="importBulkText()">Importar texto</button>
+        </div>
+        <p class="hint" id="bulkStatusMsg"></p>
+        <div id="bulkPreview" style="overflow:auto;margin-top:12px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="registros" class="section">
+    <div class="grid2">
+      <div class="panel">
+        <div class="toolbar"><h2>Entradas</h2><span id="entradasCount" class="status">0 registros</span></div>
+        <div class="desktopTable" style="overflow:auto"><table><thead><tr><th>Previsto</th><th>Descrição</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Ação</th></tr></thead><tbody id="entradasRecords"></tbody></table></div>
+        <div id="entradasMobile" class="mobileList"></div>
       </div>
       <div class="panel">
-        <h2>Registros editáveis</h2>
+        <div class="toolbar"><h2>Contas / Saídas</h2><span id="saidasCount" class="status">0 registros</span></div>
+        <div class="desktopTable" style="overflow:auto"><table><thead><tr><th>Venc.</th><th>Descrição</th><th>Tipo</th><th>Status</th><th>Valor</th><th>Ação</th></tr></thead><tbody id="saidasRecords"></tbody></table></div>
+        <div id="saidasMobile" class="mobileList"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="toolbar">
+        <h2>Tabela geral editável</h2>
+        <button class="secondary" onclick="exportCSV()">Exportar CSV</button>
+      </div>
+      <div class="desktopTable" style="overflow:auto">
+        <table>
+          <thead><tr><th>Data</th><th>Venc.</th><th>Prev.</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Status</th><th>Pagamento</th><th>Recorr.</th><th>Valor</th><th>Ação</th><th></th></tr></thead>
+          <tbody id="records"></tbody>
+        </table>
+      </div>
+      <div id="geralMobile" class="mobileList"></div>
+    </div>
+  </section>
+
+  <section id="relatorios" class="section">
+    <div class="grid3">
+      <div class="panel"><h2>Resumo por tipo</h2><div id="typeSummary"></div></div>
+      <div class="panel"><h2>Resumo por status</h2><div id="statusSummary"></div></div>
+      <div class="panel"><h2>Resumo por categoria</h2><div id="categorySummary"></div></div>
+    </div>
+  </section>
+
+  <section id="comparativo" class="section">
+    <div class="panel" style="margin-bottom:16px">
+      <div class="toolbar">
+        <div>
+          <h2>Comparativo Pessoal x Empresas</h2>
+          <p class="status">Compare o mês selecionado e acompanhe também o acumulado anual.</p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:end;flex-wrap:wrap">
+          <div>
+            <label>Mês comparativo</label>
+            <input id="comparisonMonth" type="month" onchange="renderComparison()">
+          </div>
+          <button class="secondary" onclick="setComparisonCurrentMonth()">Mês atual</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="comparisonHero">
+      <div class="panel">
+        <h2>Visão mensal</h2>
+        <p class="status">Mostra apenas lançamentos do mês selecionado.</p>
+        <div class="grid3" style="margin-top:16px">
+          <div class="card"><small>Saldo empresas mês</small><strong id="cmpEmpresas" class="positive comparisonBig">R$ 0,00</strong></div>
+          <div class="card"><small>Saldo pessoal mês</small><strong id="cmpPessoal" class="info comparisonBig">R$ 0,00</strong></div>
+          <div class="card"><small>Retiradas mês</small><strong id="cmpRetiradas" class="warning comparisonBig">R$ 0,00</strong></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Saúde do empresário</h2>
+        <div id="cmpInsight" class="status">Sem dados suficientes ainda.</div>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="card"><small>Entradas empresas anual</small><strong id="cmpEmpresasEntradasAno" class="positive">R$ 0,00</strong></div>
+      <div class="card"><small>Custos empresas anual</small><strong id="cmpEmpresasCustosAno" class="negative">R$ 0,00</strong></div>
+      <div class="card"><small>Retiradas anual</small><strong id="cmpRetiradasAno" class="warning">R$ 0,00</strong></div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h2>Empresas cadastradas — mês</h2>
         <div style="overflow:auto">
-          <table>
-            <thead><tr><th>Data</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Valor</th><th>Observação</th><th></th></tr></thead>
-            <tbody id="records"></tbody>
+          <table class="miniTable">
+            <thead><tr><th>Empresa</th><th>Entradas</th><th>Saídas</th><th>Saldo</th><th>Retirada</th></tr></thead>
+            <tbody id="companyComparisonRows"></tbody>
           </table>
         </div>
       </div>
-    </section>
+      <div class="panel">
+        <h2>Pessoal — mês e ano</h2>
+        <div id="personalComparisonBox"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Empresas cadastradas — acumulado anual</h2>
+      <div style="overflow:auto">
+        <table class="miniTable">
+          <thead><tr><th>Empresa</th><th>Entradas ano</th><th>Saídas ano</th><th>Saldo ano</th><th>Retirada ano</th></tr></thead>
+          <tbody id="companyComparisonRowsYear"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   </main>
 </div>
+
+  <div id="profileModal" class="modalOverlay">
+    <div class="modal">
+      <div class="modalHeader">
+        <h2>Editar perfil</h2>
+        <button class="secondary" onclick="closeProfileModal()">Fechar</button>
+      </div>
+
+      <div class="profilePreview">
+        <div id="profileModalAvatar" class="avatar">?</div>
+        <div class="userMeta">
+          <strong id="profileModalName">Usuário</strong>
+          <span id="profileModalEmail">email</span>
+        </div>
+      </div>
+
+      <div class="formGrid">
+        <div>
+          <label>Nome de exibição</label>
+          <input id="profileDisplayName" placeholder="Seu nome">
+        </div>
+        <div>
+          <label>Telefone / WhatsApp</label>
+          <input id="profilePhone" placeholder="(51) 99999-9999">
+        </div>
+        <div>
+          <label>Cargo</label>
+          <input id="profileRole" placeholder="CEO, Gestor, Financeiro...">
+        </div>
+        <div>
+          <label>Nome da empresa</label>
+          <input id="profileCompanyName" placeholder="Empresa">
+        </div>
+        <div class="full">
+          <label>Foto de perfil personalizada</label>
+          <input id="profilePhotoURL" placeholder="Cole aqui uma URL de imagem. Se vazio, usa a foto do Google.">
+          <p class="hint">Para trocar a foto, suba a imagem em algum lugar e cole o link direto aqui. Futuramente dá para conectar upload no Firebase Storage.</p>
+        </div>
+        <div class="full">
+          <label>Observações do perfil</label>
+          <textarea id="profileNotes" placeholder="Preferências, dados internos, informações úteis..."></textarea>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button class="primary" onclick="saveProfile()">Salvar perfil</button>
+        <button class="secondary" onclick="resetProfilePhoto()">Usar foto do Google</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="transactionModal" class="modalOverlay">
+    <div class="modal modalWide">
+      <div class="modalHeader">
+        <h2>Editar lançamento</h2>
+        <button class="secondary" onclick="closeTransactionModal()">Fechar</button>
+      </div>
+
+      <input type="hidden" id="editId">
+
+      <div class="editModalGrid">
+        <div>
+          <label>Data</label>
+          <input id="editDate" type="date">
+          <div class="dateTools">
+            <button class="dateChip" onclick="setEditDateQuick('editDate','today')">Hoje</button>
+            <button class="dateChip" onclick="setEditDateQuick('editDate','nextMonth')">+1 mês</button>
+          </div>
+        </div>
+        <div>
+          <label>Vencimento</label>
+          <input id="editDueDate" type="date" onchange="updateEditExpectedDate()">
+          <div class="dateTools">
+            <button class="dateChip" onclick="setEditDateQuick('editDueDate','today');updateEditExpectedDate()">Hoje</button>
+            <button class="dateChip" onclick="setEditDateQuick('editDueDate','nextBusiness');updateEditExpectedDate()">Próx. útil</button>
+            <button class="dateChip" onclick="setEditDateQuick('editDueDate','nextMonth');updateEditExpectedDate()">+1 mês</button>
+          </div>
+        </div>
+        <div>
+          <label>Previsão caixa</label>
+          <input id="editExpectedDate" type="date">
+          <div class="dateTools">
+            <button class="dateChip" onclick="updateEditExpectedDate()">Recalcular</button>
+            <button class="dateChip" onclick="setEditDateQuick('editExpectedDate','nextBusiness')">Próx. útil</button>
+          </div>
+        </div>
+
+        <div class="full">
+          <label>Descrição</label>
+          <input id="editDescription">
+        </div>
+
+        <div>
+          <label>Tipo</label>
+          <select id="editType">
+            <option>Entrada Fixa</option>
+            <option>Entrada Variável</option>
+            <option>Saída</option>
+            <option>Custo Fixo</option>
+            <option>Custo Variável</option>
+            <option>Retirada da Empresa</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Categoria</label>
+          <input id="editCategory">
+        </div>
+
+        <div>
+          <label>Status</label>
+          <select id="editPaymentStatus">
+            <option>Pendente</option>
+            <option>Previsto</option>
+            <option>Pago/Recebido</option>
+            <option>Atrasado</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Pagamento</label>
+          <select id="editPaymentMethod" onchange="updateEditExpectedDate()">
+            <option>Pix</option>
+            <option>Boleto</option>
+            <option>Transferência</option>
+            <option>Cartão de crédito</option>
+            <option>Cartão de débito</option>
+            <option>Dinheiro</option>
+            <option>Outro</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Recorrência</label>
+          <select id="editRecurrence">
+            <option>Não recorrente</option>
+            <option>Mensal</option>
+            <option>Semanal</option>
+            <option>Anual</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Responsável</label>
+          <input id="editOwner">
+        </div>
+
+        <div>
+          <label>Valor</label>
+          <input id="editAmount" type="number" step="0.01">
+        </div>
+
+        <div>
+          <label>Parcela</label>
+          <input id="editInstallment" disabled>
+        </div>
+
+        <div class="full">
+          <label>Observação</label>
+          <textarea id="editNotes"></textarea>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button class="primary" onclick="saveTransactionEdit()">Salvar alterações</button>
+        <button class="success" onclick="markPaidFromModal()">Confirmar pago</button>
+        <button class="danger" onclick="deleteFromModal()">Excluir lançamento</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewDescriptionModal" class="modalOverlay">
+    <div class="modal">
+      <div class="modalHeader">
+        <h2>Detalhes do lançamento</h2>
+        <button class="secondary" onclick="closeDescriptionModal()">Fechar</button>
+      </div>
+      <div class="viewTextBox" id="viewDescriptionContent"></div>
+      <div class="btns">
+        <button class="primary" id="viewDescriptionEditBtn">Editar lançamento</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="typingHelper" id="typingHelper">Modo digitação ativo — o campo em edição será centralizado automaticamente.</div>
 
 <script>
 const firebaseConfig = {
@@ -128,189 +941,1570 @@ const db = firebase.firestore();
 let profile = "pessoal";
 let items = [];
 let user = null;
+let userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "" };
 let unsubscribe = null;
 let categoryChart, flowChart;
 
-const brl = v => Number(v || 0).toLocaleString("pt-BR", {style:"currency", currency:"BRL"});
+const brl = v => Number(v || 0).toLocaleString("pt-BR", {style:"currency",currency:"BRL"});
 const collectionRef = () => db.collection("users").doc(user.uid).collection(profile);
 
-function setStatus(msg) { document.getElementById("status").textContent = msg; }
 
-function register() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  auth.createUserWithEmailAndPassword(email, password).catch(e => alert(e.message));
+function setSectionById(id){
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  const section = document.getElementById(id);
+  if(section) section.classList.add("active");
+
+  document.querySelectorAll(".navTab").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".navTab").forEach(b => {
+    if(normalizeKey(b.textContent).includes(normalizeKey(id)) || 
+      (id === "visao" && normalizeKey(b.textContent).includes("dashboard")) ||
+      (id === "lancamentos" && normalizeKey(b.textContent).includes("lancamento")) ||
+      (id === "registros" && normalizeKey(b.textContent).includes("registro")) ||
+      (id === "relatorios" && normalizeKey(b.textContent).includes("relatorio")) ||
+      (id === "comparativo" && normalizeKey(b.textContent).includes("comparativo"))) {
+      b.classList.add("active");
+    }
+  });
+  if(id === "comparativo") renderComparison();
+  setTimeout(renderCharts, 100);
 }
 
-function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-  auth.signInWithEmailAndPassword(email, password).catch(e => alert(e.message));
+function handlePlatformSearch(query){
+  const box = document.getElementById("searchResults");
+  const q = normalizeKey(query);
+  if(!q){
+    box.classList.remove("active");
+    box.innerHTML = "";
+    return;
+  }
+
+  const actions = [
+    {label:"Dashboard", desc:"Resumo financeiro, saúde financeira e gráficos", section:"visao", keys:"dashboard resumo saúde saude gráficos graficos"},
+    {label:"Lançamentos", desc:"Adicionar entradas, custos, recorrências e importações", section:"lancamentos", keys:"lancamentos adicionar custo entrada importar texto csv"},
+    {label:"Registros", desc:"Editar, confirmar pagamento e ver lançamentos", section:"registros", keys:"registros tabela editar pagamentos entradas saidas"},
+    {label:"Relatórios", desc:"Resumo por tipo, categoria e status", section:"relatorios", keys:"relatorios categoria status tipo"},
+    {label:"Comparativo", desc:"Pessoal x empresas, mensal e anual", section:"comparativo", keys:"comparativo pessoal empresa anual mensal retirada"}
+  ];
+
+  const itemMatches = items
+    .filter(item => normalizeKey(`${item.description} ${item.category} ${item.type} ${item.paymentStatus}`).includes(q))
+    .slice(0,5)
+    .map(item => ({
+      label: shortDescription(item.description),
+      desc: `${item.type} • ${brl(item.amount)} • ${formatShortDate(item.dueDate || item.date)}`,
+      action: () => { setSectionById("registros"); openDescriptionModal(item.id); }
+    }));
+
+  const actionMatches = actions
+    .filter(a => normalizeKey(`${a.label} ${a.desc} ${a.keys}`).includes(q))
+    .map(a => ({
+      label:a.label,
+      desc:a.desc,
+      action:() => setSectionById(a.section)
+    }));
+
+  const results = [...actionMatches, ...itemMatches].slice(0,8);
+
+  box.innerHTML = results.length ? results.map((r, idx) => `
+    <div class="searchItem" onclick="runSearchResult(${idx})">
+      <strong>${safe(r.label)}</strong>
+      <span>${safe(r.desc)}</span>
+    </div>
+  `).join("") : `<div class="searchItem"><strong>Nada encontrado</strong><span>Tente buscar por Dashboard, Lançamentos, Registros, custos ou nome do cliente.</span></div>`;
+
+  window.__searchResults = results;
+  box.classList.add("active");
 }
 
-function loginGoogle() {
+function runSearchResult(index){
+  const result = window.__searchResults && window.__searchResults[index];
+  if(result && result.action) result.action();
+  document.getElementById("searchResults").classList.remove("active");
+  const a = document.getElementById("platformSearch");
+  const b = document.getElementById("platformSearchMobile");
+  if(a) a.value = "";
+  if(b) b.value = "";
+}
+
+function updateFinancialHealth({entradas, saidas, saldo, aReceber, aPagar}){
+  const panel = document.getElementById("financialHealthPanel");
+  if(!panel) return;
+  const icon = document.getElementById("financialHealthIcon");
+  const title = document.getElementById("financialHealthTitle");
+  const msg = document.getElementById("financialHealthMessage");
+
+  panel.classList.remove("risk","warning");
+
+  if(entradas === 0 && saidas === 0){
+    icon.textContent = "🧭";
+    title.textContent = "Comece lançando suas movimentações";
+    msg.textContent = "Assim que houver entradas e custos, o sistema mostra se o mês está saudável ou em risco.";
+    return;
+  }
+
+  if(saldo > 0 && aPagar <= saldo){
+    icon.textContent = "💚";
+    title.textContent = "Finanças saudáveis neste mês";
+    msg.textContent = `Você está com saldo positivo de ${brl(saldo)}. Mantendo o ritmo, sobra dinheiro após os compromissos previstos.`;
+  } else if(saldo >= 0 && aPagar > saldo){
+    panel.classList.add("warning");
+    icon.textContent = "⚠️";
+    title.textContent = "Atenção ao caixa";
+    msg.textContent = `O saldo está positivo, mas os pagamentos pendentes (${brl(aPagar)}) podem pressionar o caixa.`;
+  } else {
+    panel.classList.add("risk");
+    icon.textContent = "🚨";
+    title.textContent = "Risco financeiro no mês";
+    msg.textContent = `As saídas estão maiores que as entradas em ${brl(Math.abs(saldo))}. Revise custos, vencimentos e recebimentos pendentes.`;
+  }
+}
+
+function setEditDateQuick(fieldId, mode){
+  const input = document.getElementById(fieldId);
+  if(!input) return;
+  const base = input.value || new Date().toISOString().slice(0,10);
+  if(mode === "today") input.value = new Date().toISOString().slice(0,10);
+  if(mode === "nextBusiness") input.value = nextBusinessDay(addDays(base, 1));
+  if(mode === "nextMonth") input.value = addMonths(base, 1);
+}
+
+
+function setStatus(msg){document.getElementById("status").textContent = msg}
+function setSection(evt,id){
+  document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".navTab").forEach(b => b.classList.remove("active"));
+  evt.target.classList.add("active");
+  setTimeout(renderCharts, 100);
+  if(id === "comparativo") renderComparison();
+}
+function register(){
+  const email=document.getElementById("email").value;
+  const password=document.getElementById("password").value;
+  auth.createUserWithEmailAndPassword(email,password).catch(e=>alert(e.message));
+}
+function login(){
+  const email=document.getElementById("email").value;
+  const password=document.getElementById("password").value;
+  auth.signInWithEmailAndPassword(email,password).catch(e=>alert(e.message));
+}
+function loginGoogle(){
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithPopup(provider).catch(e => alert(e.message));
+  auth.signInWithPopup(provider).catch(e=>alert(e.message));
+}
+function logout(){auth.signOut()}
+
+
+function initialsFromUser(u){
+  const source = (u && (u.displayName || u.email)) ? (u.displayName || u.email) : "?";
+  return source.trim().slice(0,1).toUpperCase();
 }
 
-function logout() { auth.signOut(); }
+function currentDisplayName(u){
+  return (userSettings.displayName || (u && u.displayName) || "Usuário").trim();
+}
 
-auth.onAuthStateChanged(u => {
-  user = u;
-  if (unsubscribe) unsubscribe();
+function currentPhotoURL(u){
+  return (userSettings.customPhotoURL || (u && u.photoURL) || "").trim();
+}
 
-  const loggedIn = !!u;
-  document.getElementById("loginFields").style.display = loggedIn ? "none" : "block";
-  document.getElementById("passwordField").style.display = loggedIn ? "none" : "block";
-  document.getElementById("loginBtn").style.display = loggedIn ? "none" : "inline-block";
-  document.getElementById("registerBtn").style.display = loggedIn ? "none" : "inline-block";
-  document.getElementById("googleBtn").style.display = loggedIn ? "none" : "inline-block";
-  document.getElementById("logoutBtn").style.display = loggedIn ? "inline-block" : "none";
+function renderUserUI(u){
+  const avatarEls = [
+    document.getElementById("userAvatar"),
+    document.getElementById("topAvatar"),
+    document.getElementById("profileModalAvatar")
+  ];
+  const name = u ? currentDisplayName(u) : "Usuário";
+  const email = u ? (u.email || "") : "Desconectado";
+  const photo = u ? currentPhotoURL(u) : "";
 
-  if (!u) {
-    items = [];
+  document.getElementById("userName").textContent = name;
+  document.getElementById("userEmail").textContent = email;
+  document.getElementById("topUserLabel").textContent = u ? name : "Faça login";
+  if(document.getElementById("profileModalName")) document.getElementById("profileModalName").textContent = name;
+  if(document.getElementById("profileModalEmail")) document.getElementById("profileModalEmail").textContent = email;
+
+  avatarEls.forEach(el => {
+    if(!el) return;
+    if(photo){
+      el.innerHTML = `<img src="${photo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" referrerpolicy="no-referrer">`;
+    } else {
+      el.textContent = initialsFromUser(u);
+    }
+  });
+}
+
+function ensureCompanies(){
+  if(!Array.isArray(userSettings.companies) || !userSettings.companies.length){
+    userSettings.companies = [{id:"midia", name:userSettings.companyName || "Empresa"}];
+  }
+  if(!userSettings.companies.find(c => c.id === "midia")){
+    userSettings.companies.unshift({id:"midia", name:userSettings.companyName || "Empresa"});
+  }
+}
+
+function currentCompany(){
+  ensureCompanies();
+  return userSettings.companies.find(c => c.id === profile) || userSettings.companies[0];
+}
+
+function renderProfileTabs(){
+  ensureCompanies();
+  const box = document.getElementById("profileTabs");
+  if(!box) return;
+  box.innerHTML = `<button id="personalTab" class="tab ${profile === "pessoal" ? "active" : ""}" onclick="setProfile('pessoal')">Pessoal</button>`;
+  userSettings.companies.forEach(c => {
+    box.innerHTML += `<button class="tab ${profile === c.id ? "active" : ""}" onclick="setProfile('${c.id}')">${safe(c.name || "Empresa")}</button>`;
+  });
+}
+
+function renderCompanyName(){
+  ensureCompanies();
+  const company = currentCompany();
+  const name = (company.name || userSettings.companyName || "Empresa").trim() || "Empresa";
+
+  renderProfileTabs();
+
+  if(document.getElementById("companyNameInput")){
+    document.getElementById("companyNameInput").value = profile === "pessoal" ? "" : (name === "Empresa" ? "" : name);
+    document.getElementById("companyNameInput").disabled = profile === "pessoal";
+  }
+  if(document.getElementById("profileCompanyName")) document.getElementById("profileCompanyName").value = name === "Empresa" ? "" : name;
+}
+
+async function loadUserSettings(){
+  if(!user) return;
+  const ref = db.collection("users").doc(user.uid).collection("settings").doc("profile");
+  const snap = await ref.get();
+  if(snap.exists){
+    userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "", ...snap.data() };
+  } else {
+    userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "" };
+  }
+  ensureCompanies();
+  renderCompanyName();
+}
+
+
+function openProfileModal(){
+  if(!user) return alert("Faça login primeiro.");
+  document.getElementById("profileDisplayName").value = userSettings.displayName || (user.displayName || "");
+  document.getElementById("profilePhone").value = userSettings.phone || "";
+  document.getElementById("profileRole").value = userSettings.role || "";
+  document.getElementById("profileCompanyName").value = userSettings.companyName === "Empresa" ? "" : (userSettings.companyName || "");
+  document.getElementById("profilePhotoURL").value = userSettings.customPhotoURL || "";
+  document.getElementById("profileNotes").value = userSettings.profileNotes || "";
+  renderUserUI(user);
+  document.getElementById("profileModal").classList.add("active");
+}
+
+function closeProfileModal(){
+  document.getElementById("profileModal").classList.remove("active");
+}
+
+async function saveProfile(){
+  if(!user) return alert("Faça login primeiro.");
+  const profileData = {
+    displayName: document.getElementById("profileDisplayName").value.trim(),
+    phone: document.getElementById("profilePhone").value.trim(),
+    role: document.getElementById("profileRole").value.trim(),
+    companyName: document.getElementById("profileCompanyName").value.trim() || "Empresa",
+    companies: userSettings.companies,
+    customPhotoURL: document.getElementById("profilePhotoURL").value.trim(),
+    profileNotes: document.getElementById("profileNotes").value.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  ensureCompanies();
+  if(profile !== "pessoal"){
+    userSettings.companies = userSettings.companies.map(c => c.id === profile ? {...c, name: profileData.companyName} : c);
+    profileData.companies = userSettings.companies;
+    if(profile === "midia") profileData.companyName = profileData.companyName;
+  }
+  userSettings = { ...userSettings, ...profileData };
+  await db.collection("users").doc(user.uid).collection("settings").doc("profile").set(profileData, { merge: true });
+  renderCompanyName();
+  renderUserUI(user);
+  closeProfileModal();
+  alert("Perfil atualizado.");
+}
+
+async function resetProfilePhoto(){
+  if(!user) return;
+  document.getElementById("profilePhotoURL").value = "";
+  userSettings.customPhotoURL = "";
+  await db.collection("users").doc(user.uid).collection("settings").doc("profile").set({
+    customPhotoURL: "",
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+  renderUserUI(user);
+}
+
+async function saveCompanyName(){
+  if(!user) return alert("Faça login primeiro.");
+  if(profile === "pessoal") return alert("Selecione uma empresa para renomear.");
+  const name = (document.getElementById("companyNameInput").value || "Empresa").trim() || "Empresa";
+  ensureCompanies();
+  userSettings.companies = userSettings.companies.map(c => c.id === profile ? {...c, name} : c);
+  if(profile === "midia") userSettings.companyName = name;
+
+  await db.collection("users").doc(user.uid).collection("settings").doc("profile").set({
+    companyName: userSettings.companyName || name,
+    companies: userSettings.companies,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+
+  renderCompanyName();
+  renderUserUI(user);
+  alert("Nome da empresa salvo.");
+}
+
+async function addCompany(){
+  if(!user) return alert("Faça login primeiro.");
+  const input = document.getElementById("newCompanyName");
+  const name = (input.value || "").trim();
+  if(!name) return alert("Informe o nome da empresa.");
+
+  ensureCompanies();
+  const id = "empresa_" + crypto.randomUUID().replace(/-/g, "").slice(0,12);
+  userSettings.companies.push({id, name});
+
+  await db.collection("users").doc(user.uid).collection("settings").doc("profile").set({
+    companies: userSettings.companies,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+
+  input.value = "";
+  renderCompanyName();
+  setProfile(id);
+}
+
+
+auth.onAuthStateChanged(async u=>{
+  user=u;
+  if(unsubscribe) unsubscribe();
+  const loggedIn=!!u;
+  ["loginFields","passwordField","loginBtn","registerBtn","googleBtn"].forEach(id=>document.getElementById(id).style.display=loggedIn?"none":"block");
+  document.getElementById("logoutBtn").style.display=loggedIn?"block":"none";
+  renderUserUI(u);
+
+  if(!u){
+    items=[];
+    userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "" };
+    renderCompanyName();
     setStatus("🔴 Desconectado. Faça login para salvar na nuvem.");
     render();
     return;
   }
 
-  document.getElementById("email").value = "";
-  document.getElementById("password").value = "";
+  await loadUserSettings();
+  renderUserUI(u);
+  document.getElementById("email").value="";
+  document.getElementById("password").value="";
   setStatus("🟢 Logado como: " + (u.displayName ? u.displayName + " — " : "") + u.email + " | Salvando online no Firebase.");
   listenData();
 });
 
-function listenData() {
-  if (!user) return;
-  if (unsubscribe) unsubscribe();
-  unsubscribe = collectionRef().orderBy("date", "desc").onSnapshot(snapshot => {
-    items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+function listenData(){
+  if(!user)return;
+  if(unsubscribe) unsubscribe();
+  unsubscribe = collectionRef().orderBy("expectedDate","desc").onSnapshot(snapshot=>{
+    items=snapshot.docs.map(doc=>({id:doc.id,...doc.data()}));
     render();
-  }, err => alert("Erro ao carregar dados: " + err.message));
+  },err=>alert("Erro ao carregar dados: "+err.message));
 }
 
-function setProfile(next) {
-  profile = next;
-  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
-  document.querySelectorAll(".tab")[next === "pessoal" ? 0 : 1].classList.add("active");
-  items = [];
+function setProfile(next){
+  profile=next;
+  renderCompanyName();
+  items=[];
   listenData();
   render();
 }
 
-async function addItem() {
-  if (!user) return alert("Faça login primeiro.");
-  const item = {
-    date: document.getElementById("date").value || new Date().toISOString().slice(0,10),
-    description: document.getElementById("description").value.trim(),
-    type: document.getElementById("type").value,
-    category: document.getElementById("category").value.trim() || "Sem categoria",
-    amount: Number(document.getElementById("amount").value || 0),
-    notes: document.getElementById("notes").value.trim(),
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-  if (!item.description || item.amount <= 0) return alert("Preencha descrição e valor.");
-  await collectionRef().add(item);
-  clearForm();
+function addDays(date, days){
+  const d = new Date(date + "T12:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0,10);
 }
-
-async function updateItem(id, field, value) {
-  if (!user) return;
-  const parsed = field === "amount" ? Number(String(value).replace(",", ".").replace(/[^\d.-]/g, "")) || 0 : value;
-  await collectionRef().doc(id).update({ [field]: parsed });
+function addMonths(date, months){
+  const d = new Date(date + "T12:00:00");
+  const day = d.getDate();
+  d.setMonth(d.getMonth() + months);
+  if (d.getDate() < day) d.setDate(0);
+  return d.toISOString().slice(0,10);
 }
-
-async function removeItem(id) {
-  if (!user) return;
-  if (confirm("Excluir este lançamento?")) await collectionRef().doc(id).delete();
+function addYears(date, years){
+  const d = new Date(date + "T12:00:00");
+  d.setFullYear(d.getFullYear() + years);
+  return d.toISOString().slice(0,10);
 }
-
-function clearForm() {
-  ["description","amount","category","notes"].forEach(id => document.getElementById(id).value = "");
-  document.getElementById("date").value = new Date().toISOString().slice(0,10);
+function nextBusinessDay(date){
+  let d = new Date(date + "T12:00:00");
+  while([0,6].includes(d.getDay())) d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0,10);
 }
-
-function isEntrada(type) { return String(type).includes("Entrada"); }
-
-function render() {
-  const entradas = items.filter(x => isEntrada(x.type)).reduce((s,x) => s + Number(x.amount || 0), 0);
-  const saidas = items.filter(x => !isEntrada(x.type)).reduce((s,x) => s + Number(x.amount || 0), 0);
-  const fixos = items.filter(x => x.type === "Custo Fixo").reduce((s,x) => s + Number(x.amount || 0), 0);
-  const saldo = entradas - saidas;
-  document.getElementById("totalEntradas").textContent = brl(entradas);
-  document.getElementById("totalSaidas").textContent = brl(saidas);
-  document.getElementById("fixos").textContent = brl(fixos);
-  document.getElementById("saldo").textContent = brl(saldo);
-  document.getElementById("saldo").className = saldo >= 0 ? "positive" : "negative";
-
-  const tbody = document.getElementById("records");
-  tbody.innerHTML = "";
-  if (!items.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty">Nenhum lançamento ainda.</td></tr>';
-  } else {
-    items.forEach(item => {
-      tbody.innerHTML += `<tr>
-        <td contenteditable="true" onblur="updateItem('${item.id}','date',this.textContent)">${safe(item.date)}</td>
-        <td contenteditable="true" onblur="updateItem('${item.id}','description',this.textContent)">${safe(item.description)}</td>
-        <td><span class="pill">${safe(item.type)}</span></td>
-        <td contenteditable="true" onblur="updateItem('${item.id}','category',this.textContent)">${safe(item.category)}</td>
-        <td contenteditable="true" onblur="updateItem('${item.id}','amount',this.textContent)">${brl(item.amount)}</td>
-        <td contenteditable="true" onblur="updateItem('${item.id}','notes',this.textContent)">${safe(item.notes || "")}</td>
-        <td><button class="danger" onclick="removeItem('${item.id}')">Excluir</button></td>
-      </tr>`;
-    });
+function calculateExpectedDate(dueDate, method){
+  if(!dueDate) return "";
+  if(method === "Boleto"){
+    return nextBusinessDay(addDays(dueDate, 1));
   }
-  renderCharts();
+  if(method === "Cartão de crédito"){
+    return nextBusinessDay(addDays(dueDate, 30));
+  }
+  return nextBusinessDay(dueDate);
+}
+function updateExpectedDate(){
+  const due = document.getElementById("dueDate").value;
+  const method = document.getElementById("paymentMethod").value;
+  document.getElementById("expectedDate").value = calculateExpectedDate(due, method);
+}
+function toggleRecurrenceHint(){
+  const recurrence = document.getElementById("recurrence").value;
+  const count = document.getElementById("recurrenceCount");
+  if(recurrence === "Não recorrente"){
+    count.value = 1;
+    document.getElementById("recurrenceHint").textContent = "Pagamento único: será criado apenas 1 lançamento.";
+  } else {
+    document.getElementById("recurrenceHint").textContent = "Recorrente: o sistema criará automaticamente lançamentos futuros conforme a quantidade informada.";
+  }
 }
 
-function renderCharts() {
-  const byCategory = {};
-  items.forEach(x => {
-    const signal = isEntrada(x.type) ? 1 : -1;
-    byCategory[x.category || "Sem categoria"] = (byCategory[x.category || "Sem categoria"] || 0) + Number(x.amount || 0) * signal;
-  });
 
-  const flowData = {
-    "Entrada Fixa": sum("Entrada Fixa"),
-    "Entrada Variável": sum("Entrada Variável"),
-    "Saída": sum("Saída"),
-    "Custo Fixo": sum("Custo Fixo"),
-    "Custo Variável": sum("Custo Variável")
+function setQuickType(type){
+  document.getElementById("type").value = type;
+  applyTypePreset();
+}
+
+function applyTypePreset(){
+  const type = document.getElementById("type").value;
+  const category = document.getElementById("category");
+  const recurrence = document.getElementById("recurrence");
+  const paymentStatus = document.getElementById("paymentStatus");
+
+  if(type === "Custo Fixo"){
+    if(!category.value) category.value = "Custo fixo";
+    recurrence.value = "Mensal";
+    paymentStatus.value = "Pendente";
+  }
+
+  if(type === "Custo Variável"){
+    if(!category.value) category.value = "Custo variável";
+    recurrence.value = "Não recorrente";
+    paymentStatus.value = "Pendente";
+  }
+
+  if(type === "Saída"){
+    if(!category.value) category.value = "Conta / despesa";
+    paymentStatus.value = "Pendente";
+  }
+
+  if(type === "Retirada da Empresa"){
+    if(!category.value) category.value = "Retirada do sócio";
+    recurrence.value = "Não recorrente";
+    paymentStatus.value = "Pago/Recebido";
+  }
+
+  toggleRecurrenceHint();
+}
+
+async function addItem(){
+  if(!user)return alert("Faça login primeiro.");
+  const baseDue = document.getElementById("dueDate").value || document.getElementById("date").value || new Date().toISOString().slice(0,10);
+  const recurrence = document.getElementById("recurrence").value;
+  const count = recurrence === "Não recorrente" ? 1 : Math.max(1, Number(document.getElementById("recurrenceCount").value || 1));
+  const base = {
+    date:document.getElementById("date").value || new Date().toISOString().slice(0,10),
+    description:document.getElementById("description").value.trim(),
+    type:document.getElementById("type").value,
+    category:document.getElementById("category").value.trim() || "Sem categoria",
+    amount:Number(document.getElementById("amount").value || 0),
+    paymentStatus:document.getElementById("paymentStatus").value,
+    paymentMethod:document.getElementById("paymentMethod").value,
+    recurrence,
+    recurrenceCount:count,
+    owner:document.getElementById("owner").value.trim(),
+    notes:document.getElementById("notes").value.trim(),
+    recurrenceGroupId: crypto.randomUUID()
   };
-  function sum(type) { return items.filter(x => x.type === type).reduce((s,x) => s + Number(x.amount || 0), 0); }
+  if(!base.description || base.amount<=0)return alert("Preencha descrição e valor.");
 
-  if (categoryChart) categoryChart.destroy();
-  if (flowChart) flowChart.destroy();
+  const batch = db.batch();
+  for(let i=0;i<count;i++){
+    let dueDate = baseDue;
+    if(recurrence === "Mensal") dueDate = addMonths(baseDue, i);
+    if(recurrence === "Semanal") dueDate = addDays(baseDue, i*7);
+    if(recurrence === "Anual") dueDate = addYears(baseDue, i);
 
-  categoryChart = new Chart(document.getElementById("categoryChart"), {
-    type:"bar",
-    data:{labels:Object.keys(byCategory).length?Object.keys(byCategory):["Sem dados"], datasets:[{label:"Fluxo",data:Object.values(byCategory).length?Object.values(byCategory):[0]}]},
-    options:{responsive:true,plugins:{legend:{display:false}}}
-  });
+    const item = {
+      ...base,
+      dueDate,
+      expectedDate: calculateExpectedDate(dueDate, base.paymentMethod),
+      installment: `${i+1}/${count}`,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    const ref = collectionRef().doc();
+    batch.set(ref, item);
+  }
+  await batch.commit();
+  clearForm();
+  alert(count === 1 ? "Lançamento criado." : `${count} lançamentos recorrentes criados.`);
+}
 
-  flowChart = new Chart(document.getElementById("flowChart"), {
-    type:"doughnut",
-    data:{labels:Object.keys(flowData), datasets:[{data:Object.values(flowData)}]},
-    options:{responsive:true}
+
+function openTransactionModal(id){
+  const item = items.find(x => x.id === id);
+  if(!item) return alert("Lançamento não encontrado.");
+
+  document.getElementById("editId").value = id;
+  document.getElementById("editDate").value = item.date || "";
+  document.getElementById("editDueDate").value = item.dueDate || "";
+  document.getElementById("editExpectedDate").value = item.expectedDate || "";
+  document.getElementById("editDescription").value = item.description || "";
+  document.getElementById("editType").value = item.type || "Entrada Variável";
+  document.getElementById("editCategory").value = item.category || "";
+  document.getElementById("editPaymentStatus").value = item.paymentStatus || "Pendente";
+  document.getElementById("editPaymentMethod").value = item.paymentMethod || "Pix";
+  document.getElementById("editRecurrence").value = item.recurrence || "Não recorrente";
+  document.getElementById("editOwner").value = item.owner || "";
+  document.getElementById("editAmount").value = Number(item.amount || 0);
+  document.getElementById("editInstallment").value = item.installment || "";
+  document.getElementById("editNotes").value = item.notes || "";
+
+  document.getElementById("transactionModal").classList.add("active");
+}
+
+function closeTransactionModal(){
+  document.getElementById("transactionModal").classList.remove("active");
+}
+
+function updateEditExpectedDate(){
+  const due = document.getElementById("editDueDate").value || document.getElementById("editDate").value;
+  const method = document.getElementById("editPaymentMethod").value;
+  document.getElementById("editExpectedDate").value = calculateExpectedDate(due, method);
+}
+
+async function saveTransactionEdit(){
+  if(!user) return;
+  const id = document.getElementById("editId").value;
+  const item = items.find(x => x.id === id);
+  if(!item) return alert("Lançamento não encontrado.");
+
+  const dueDate = document.getElementById("editDueDate").value || document.getElementById("editDate").value;
+  const paymentMethod = document.getElementById("editPaymentMethod").value;
+  const expectedDate = document.getElementById("editExpectedDate").value || calculateExpectedDate(dueDate, paymentMethod);
+
+  const update = {
+    date: document.getElementById("editDate").value,
+    dueDate,
+    expectedDate,
+    description: document.getElementById("editDescription").value.trim(),
+    type: document.getElementById("editType").value,
+    category: document.getElementById("editCategory").value.trim() || "Sem categoria",
+    paymentStatus: document.getElementById("editPaymentStatus").value,
+    paymentMethod,
+    recurrence: document.getElementById("editRecurrence").value,
+    owner: document.getElementById("editOwner").value.trim(),
+    amount: Number(document.getElementById("editAmount").value || 0),
+    notes: document.getElementById("editNotes").value.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  Object.assign(item, update);
+  await collectionRef().doc(id).update(update);
+  closeTransactionModal();
+  render();
+
+  const activeSection = document.querySelector(".section.active");
+  if(activeSection && activeSection.id === "comparativo") renderComparison();
+}
+
+async function markPaidFromModal(){
+  const id = document.getElementById("editId").value;
+  await markPaid(id);
+  closeTransactionModal();
+  render();
+}
+
+async function deleteFromModal(){
+  const id = document.getElementById("editId").value;
+  await removeItem(id);
+  closeTransactionModal();
+  render();
+}
+
+
+async function updateItem(id,field,value,el=null){
+  if(!user)return;
+
+  const item = items.find(x => x.id === id);
+  const parsed = field==="amount"
+    ? Number(String(value).replace(",",".").replace(/[^\d.-]/g,"")) || 0
+    : String(value).trim();
+
+  const update = {[field]: parsed, updatedAt: firebase.firestore.FieldValue.serverTimestamp()};
+
+  if(item){
+    const oldDate = item.date || "";
+    const oldDue = item.dueDate || "";
+    const method = field === "paymentMethod" ? parsed : (item.paymentMethod || "Pix");
+
+    // Se alterar a data principal e o vencimento estava vazio ou igual à data antiga,
+    // o sistema entende que o vencimento deve acompanhar essa nova data.
+    if(field === "date"){
+      const shouldSyncDue = !oldDue || oldDue === oldDate;
+      if(shouldSyncDue){
+        update.dueDate = parsed;
+        update.expectedDate = calculateExpectedDate(parsed, method);
+      }
+    }
+
+    // Se alterar o vencimento, recalcula a previsão no caixa.
+    if(field === "dueDate"){
+      update.expectedDate = calculateExpectedDate(parsed, method);
+    }
+
+    // Se alterar a forma de pagamento, recalcula a previsão no caixa.
+    if(field === "paymentMethod"){
+      const due = item.dueDate || item.date || new Date().toISOString().slice(0,10);
+      update.expectedDate = calculateExpectedDate(due, parsed);
+    }
+
+    // Atualização local imediata para refletir em Entradas, Registros e Dashboard sem precisar recarregar.
+    Object.assign(item, update);
+  }
+
+  await collectionRef().doc(id).update(update);
+  flashSaved(el);
+  render();
+}
+async function markPaid(id){
+  if(!user)return;
+  const item = items.find(x => x.id === id);
+  const update = {
+    paymentStatus:"Pago/Recebido",
+    paidAt:new Date().toISOString().slice(0,10),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if(item) Object.assign(item, update);
+  await collectionRef().doc(id).update(update);
+  render();
+}
+async function removeItem(id){
+  if(!user)return;
+  if(confirm("Excluir este lançamento?")) {
+    await collectionRef().doc(id).delete();
+    items = items.filter(x => x.id !== id);
+    render();
+  }
+}
+function clearForm(){
+  ["description","amount","category","notes","owner","dueDate","expectedDate"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("date").value=new Date().toISOString().slice(0,10);
+  document.getElementById("recurrence").value="Não recorrente";
+  document.getElementById("recurrenceCount").value=1;
+  toggleRecurrenceHint();
+}
+function isEntrada(type){return String(type).includes("Entrada")}
+function isPaid(item){return item.paymentStatus === "Pago/Recebido"}
+function statusClass(item){
+  if(isPaid(item)) return "paid";
+  const today = new Date().toISOString().slice(0,10);
+  if(!isEntrada(item.type) && item.dueDate && item.dueDate < today) return "overdue";
+  return "pending";
+}
+
+
+function getDashboardMonth(){
+  const input = document.getElementById("dashboardMonth");
+  if(!input || !input.value){
+    const now = new Date();
+    return now.toISOString().slice(0,7);
+  }
+  return input.value;
+}
+
+function setCurrentMonth(){
+  const input = document.getElementById("dashboardMonth");
+  const now = new Date();
+  input.value = now.toISOString().slice(0,7);
+  render();
+}
+
+function itemMonth(item){
+  const date = item.expectedDate || item.dueDate || item.date || "";
+  return String(date).slice(0,7);
+}
+
+function itemYear(item){
+  const date = item.expectedDate || item.dueDate || item.date || "";
+  return String(date).slice(0,4);
+}
+
+function itemsForSelectedMonth(){
+  const month = getDashboardMonth();
+  return items.filter(item => itemMonth(item) === month);
+}
+
+function itemsForSelectedYear(){
+  const year = getDashboardMonth().slice(0,4);
+  return items.filter(item => itemYear(item) === year);
+}
+
+function render(){
+  const monthItems = itemsForSelectedMonth();
+  const yearItems = itemsForSelectedYear();
+
+  const entradas=monthItems.filter(x=>isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const saidas=monthItems.filter(x=>!isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const custosMes=monthItems.filter(x=>x.type==="Custo Fixo" || x.type==="Custo Variável").reduce((s,x)=>s+Number(x.amount||0),0);
+  const saldo=entradas-saidas;
+  const aReceber=monthItems.filter(x=>isEntrada(x.type)&&!isPaid(x)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const aPagar=monthItems.filter(x=>!isEntrada(x.type)&&!isPaid(x)).reduce((s,x)=>s+Number(x.amount||0),0);
+
+  const entradasAno=yearItems.filter(x=>isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const custosAno=yearItems.filter(x=>x.type==="Custo Fixo" || x.type==="Custo Variável" || x.type==="Saída").reduce((s,x)=>s+Number(x.amount||0),0);
+
+  document.getElementById("totalEntradas").textContent=brl(entradas);
+  document.getElementById("totalSaidas").textContent=brl(saidas);
+  document.getElementById("fixos").textContent=brl(custosMes);
+  document.getElementById("saldo").textContent=brl(saldo);
+  document.getElementById("saldo").className=saldo>=0?"positive":"negative";
+  document.getElementById("aReceber").textContent=brl(aReceber);
+  document.getElementById("aPagar").textContent=brl(aPagar);
+  document.getElementById("entradasAno").textContent=brl(entradasAno);
+  document.getElementById("custosAno").textContent=brl(custosAno);
+  updateFinancialHealth({entradas, saidas, saldo, aReceber, aPagar});
+
+  renderMainTable();
+  renderSplitRecords();
+  renderReports();
+  renderCharts(monthItems);
+}
+
+function actionBtn(item){
+  if(isPaid(item)) return `<span class="pill">Confirmado</span>`;
+  return `<button class="success smallBtn" onclick="markPaid('${item.id}')">Confirmar pago</button>`;
+}
+
+
+const TYPE_OPTIONS = ["Entrada Fixa","Entrada Variável","Saída","Custo Fixo","Custo Variável","Retirada da Empresa"];
+const STATUS_OPTIONS = ["Pendente","Previsto","Pago/Recebido","Atrasado"];
+const PAYMENT_OPTIONS = ["Pix","Boleto","Transferência","Cartão de crédito","Cartão de débito","Dinheiro","Outro"];
+const RECURRENCE_OPTIONS = ["Não recorrente","Mensal","Semanal","Anual"];
+
+function selectCell(id, field, current, options){
+  return `<select onchange="updateItem('${id}','${field}',this.value,this)">
+    ${options.map(opt => `<option value="${safe(opt)}" ${opt === current ? "selected" : ""}>${safe(opt)}</option>`).join("")}
+  </select>`;
+}
+
+function inputCell(id, field, value, type = "text"){
+  return `<input type="${type}" value="${safe(value || "")}" onchange="updateItem('${id}','${field}',this.value,this)">`;
+}
+
+function textAreaCell(id, field, value){
+  return `<textarea style="min-width:240px;min-height:44px;padding:8px" onchange="updateItem('${id}','${field}',this.value,this)">${safe(value || "")}</textarea>`;
+}
+
+function flashSaved(el){
+  if(!el) return;
+  el.classList.remove("savedFlash");
+  void el.offsetWidth;
+  el.classList.add("savedFlash");
+}
+
+
+
+function formatShortDate(value){
+  const raw = String(value || "");
+  if(!raw) return "-";
+  const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m) return `${m[3]}/${m[2]}/${m[1].slice(2)}`;
+  const parts = raw.split(/[\/\-]/);
+  if(parts.length === 3){
+    if(parts[0].length === 4) return `${parts[2].padStart(2,"0")}/${parts[1].padStart(2,"0")}/${parts[0].slice(2)}`;
+    return `${parts[0].padStart(2,"0")}/${parts[1].padStart(2,"0")}/${parts[2].slice(-2)}`;
+  }
+  return raw;
+}
+
+function shortDescription(text){
+  const clean = String(text || "").trim();
+  if(!clean) return "-";
+  const separators = [" - ", " Cobrança ", " Cobranca ", " Gestão ", " Gestao ", " Mensalidade "];
+  for(const sep of separators){
+    const idx = clean.indexOf(sep);
+    if(idx > 0) return clean.slice(0, idx).trim();
+  }
+  const words = clean.split(/\s+/);
+  return words.slice(0, Math.min(2, words.length)).join(" ");
+}
+
+function openDescriptionModal(id){
+  const item = items.find(x => x.id === id);
+  if(!item) return;
+
+  const content = [
+    `Descrição: ${item.description || "-"}`,
+    `Tipo: ${item.type || "-"}`,
+    `Categoria: ${item.category || "-"}`,
+    `Status: ${item.paymentStatus || "-"}`,
+    `Pagamento: ${item.paymentMethod || "-"}`,
+    `Data: ${formatShortDate(item.date)}`,
+    `Vencimento: ${formatShortDate(item.dueDate)}`,
+    `Previsão caixa: ${formatShortDate(item.expectedDate)}`,
+    `Valor: ${brl(item.amount)}`,
+    item.notes ? `Observação: ${item.notes}` : ""
+  ].filter(Boolean).join("\\n");
+
+  document.getElementById("viewDescriptionContent").textContent = content;
+  document.getElementById("viewDescriptionEditBtn").onclick = () => {
+    closeDescriptionModal();
+    openTransactionModal(id);
+  };
+  document.getElementById("viewDescriptionModal").classList.add("active");
+}
+
+function closeDescriptionModal(){
+  document.getElementById("viewDescriptionModal").classList.remove("active");
+}
+
+
+function renderMainTable(){
+  const tbody=document.getElementById("records");
+  const mobile=document.getElementById("geralMobile");
+  tbody.innerHTML="";
+  mobile.innerHTML="";
+  if(!items.length){
+    tbody.innerHTML='<tr><td colspan="11" class="empty">Nenhum lançamento ainda.</td></tr>';
+    mobile.innerHTML='<div class="empty">Nenhum lançamento ainda.</div>';
+    return;
+  }
+  items.forEach(item=>{
+    tbody.innerHTML+=`<tr>
+      <td title="${safe(item.date || "-")}">${formatShortDate(item.date)}</td>
+      <td title="${safe(item.dueDate || "-")}">${formatShortDate(item.dueDate)}</td>
+      <td title="${safe(item.expectedDate || "-")}">${formatShortDate(item.expectedDate)}</td>
+      <td class="descRead">
+        <span class="shortDesc" title="${safe(item.description || "-")}" onclick="openDescriptionModal('${item.id}')">${safe(shortDescription(item.description))}</span>
+        ${item.installment?`<span class="pill">${safe(item.installment)}</span>`:""}
+      </td>
+      <td><span class="pill">${safe(item.type)}</span></td>
+      <td>${safe(item.category || "-")}</td>
+      <td>${safe(item.paymentStatus || "-")}</td>
+      <td>${safe(item.paymentMethod || "-")}</td>
+      <td><span class="pill">${safe(item.installment || "-")}</span></td>
+      <td class="${isEntrada(item.type) ? 'positive':'negative'}">${brl(item.amount)}</td>
+      <td>
+        <button class="secondary smallBtn" onclick="openTransactionModal('${item.id}')">Editar</button>
+        ${actionBtn(item)}
+      </td>
+    </tr>`;
+    mobile.innerHTML += mobileCard(item);
   });
 }
 
-function exportCSV() {
-  const rows = [["Data","Descrição","Tipo","Categoria","Valor","Observação"]];
-  items.forEach(x => rows.push([x.date,x.description,x.type,x.category,x.amount,x.notes || ""]));
-  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(";")).join("\n");
+function renderSplitRecords(){
+  const entradas=items.filter(x=>isEntrada(x.type));
+  const saidas=items.filter(x=>!isEntrada(x.type));
+  document.getElementById("entradasCount").textContent=entradas.length+(entradas.length===1?" registro":" registros");
+  document.getElementById("saidasCount").textContent=saidas.length+(saidas.length===1?" registro":" registros");
+
+  const eb=document.getElementById("entradasRecords");
+  const sb=document.getElementById("saidasRecords");
+  const em=document.getElementById("entradasMobile");
+  const sm=document.getElementById("saidasMobile");
+  eb.innerHTML=entradas.length?"":'<tr><td colspan="6" class="empty">Nenhuma entrada registrada.</td></tr>';
+  sb.innerHTML=saidas.length?"":'<tr><td colspan="6" class="empty">Nenhuma conta ou saída registrada.</td></tr>';
+  em.innerHTML=entradas.length?"":'<div class="empty">Nenhuma entrada registrada.</div>';
+  sm.innerHTML=saidas.length?"":'<div class="empty">Nenhuma conta ou saída registrada.</div>';
+
+  entradas.forEach(item=>{
+    eb.innerHTML+=`<tr><td title="${safe(item.expectedDate||item.dueDate||item.date)}">${formatShortDate(item.expectedDate||item.dueDate||item.date)}</td><td><span class="shortDesc" title="${safe(item.description)}" onclick="openDescriptionModal('${item.id}')">${safe(shortDescription(item.description))}</span> ${item.installment?`<span class="pill">${item.installment}</span>`:""}</td><td><span class="pill">${safe(item.type)}</span></td><td>${safe(item.paymentStatus||"")}</td><td class="positive">${brl(item.amount)}</td><td>${actionBtn(item)}</td></tr>`;
+    em.innerHTML += mobileCard(item);
+  });
+  saidas.forEach(item=>{
+    sb.innerHTML+=`<tr><td title="${safe(item.dueDate||item.date)}">${formatShortDate(item.dueDate||item.date)}</td><td><span class="shortDesc" title="${safe(item.description)}" onclick="openDescriptionModal('${item.id}')">${safe(shortDescription(item.description))}</span> ${item.installment?`<span class="pill">${item.installment}</span>`:""}</td><td><span class="pill">${safe(item.type)}</span></td><td>${safe(item.paymentStatus||"")}</td><td class="negative">${brl(item.amount)}</td><td>${actionBtn(item)}</td></tr>`;
+    sm.innerHTML += mobileCard(item);
+  });
+}
+
+function mobileCard(item){
+  return `<div class="mobileCard ${statusClass(item)}">
+    <div class="mobileCardTop">
+      <strong title="${safe(item.description)}">${safe(shortDescription(item.description))}</strong>
+      <strong class="${isEntrada(item.type) ? 'positive':'negative'}">${brl(item.amount)}</strong>
+    </div>
+    <p>${safe(item.type)} ${item.installment?`• ${safe(item.installment)}`:""}</p>
+    <p>Status: ${safe(item.paymentStatus||"")} • Pagamento: ${safe(item.paymentMethod||"")}</p>
+    <p>Vencimento: ${formatShortDate(item.dueDate||"-")} • Previsão caixa: ${formatShortDate(item.expectedDate||"-")}</p>
+    <div class="btns">
+      <button class="mobileEditBtn smallBtn" onclick="openTransactionModal('${item.id}')">Editar</button>
+      <button class="mobileDetailsBtn smallBtn" onclick="openDescriptionModal('${item.id}')">Detalhes</button>
+      ${isPaid(item) ? `<span class="pill">Confirmado</span>` : `<button class="success smallBtn" onclick="markPaid('${item.id}')">Confirmar</button>`}
+      <button class="danger smallBtn" onclick="removeItem('${item.id}')">Excluir</button>
+    </div>
+  </div>`;
+}
+
+function renderReports(){
+  makeSummary("typeSummary", groupBy("type"));
+  makeSummary("statusSummary", groupBy("paymentStatus"));
+  makeSummary("categorySummary", groupBy("category"));
+}
+function groupBy(field){
+  return groupByScoped(items, field);
+}
+
+function groupByScoped(list, field){
+  const g={};
+  list.forEach(x=>{
+    const key=x[field] || "Sem informação";
+    const signal=isEntrada(x.type)?1:-1;
+    g[key]=(g[key]||0)+Number(x.amount||0)*signal;
+  });
+  return g;
+}
+function makeSummary(id,obj){
+  const el=document.getElementById(id);
+  const entries=Object.entries(obj);
+  el.innerHTML=entries.length?"":'<p class="status">Sem dados.</p>';
+  entries.sort((a,b)=>Math.abs(b[1])-Math.abs(a[1])).forEach(([k,v])=>{
+    el.innerHTML+=`<div style="display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:10px 0"><span>${safe(k)}</span><strong class="${v>=0?'positive':'negative'}">${brl(v)}</strong></div>`;
+  });
+}
+
+function renderCharts(scopeItems = itemsForSelectedMonth()){
+  const catCanvas=document.getElementById("categoryChart");
+  const flowCanvas=document.getElementById("flowChart");
+  if(!catCanvas || !flowCanvas)return;
+  const byCategory=groupByScoped(scopeItems,"category");
+  const flowData={
+    "Entrada Fixa":sum("Entrada Fixa"),
+    "Entrada Variável":sum("Entrada Variável"),
+    "Saída":sum("Saída"),
+    "Custo Fixo":sum("Custo Fixo"),
+    "Custo Variável":sum("Custo Variável")
+  };
+  function sum(type){return scopeItems.filter(x=>x.type===type).reduce((s,x)=>s+Number(x.amount||0),0)}
+  if(categoryChart)categoryChart.destroy();
+  if(flowChart)flowChart.destroy();
+  categoryChart=new Chart(catCanvas,{type:"bar",data:{labels:Object.keys(byCategory).length?Object.keys(byCategory):["Sem dados"],datasets:[{label:"Fluxo",data:Object.values(byCategory).length?Object.values(byCategory):[0]}]},options:{responsive:true,plugins:{legend:{display:false}}}});
+  flowChart=new Chart(flowCanvas,{type:"doughnut",data:{labels:Object.keys(flowData),datasets:[{data:Object.values(flowData)}]},options:{responsive:true}});
+}
+
+
+function normalizeKey(value){
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function normalizeMoney(value){
+  if (typeof value === "number") return value;
+  let v = String(value || "").trim();
+  v = v.replace(/[R$\s]/g, "");
+  if (v.includes(",") && v.includes(".")) v = v.replace(/\./g, "").replace(",", ".");
+  else if (v.includes(",")) v = v.replace(",", ".");
+  return Number(v) || 0;
+}
+
+function normalizeDate(value){
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  const m = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (m) {
+    const dd = m[1].padStart(2, "0");
+    const mm = m[2].padStart(2, "0");
+    const yyyy = m[3].length === 2 ? "20" + m[3] : m[3];
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  const d = new Date(raw);
+  return isNaN(d.getTime()) ? "" : d.toISOString().slice(0,10);
+}
+
+function normalizeType(value){
+  const v = normalizeKey(value);
+  if (v.includes("entrada") && v.includes("fix")) return "Entrada Fixa";
+  if (v.includes("entrada")) return "Entrada Variável";
+  if (v.includes("custo") && v.includes("fix")) return "Custo Fixo";
+  if (v.includes("custo")) return "Custo Variável";
+  if (v.includes("retirada") || v.includes("pro labore") || v.includes("prolabore") || v.includes("distribuicao")) return "Retirada da Empresa";
+  if (v.includes("saida") || v.includes("despesa") || v.includes("conta")) return "Saída";
+  return value || "Entrada Variável";
+}
+
+function normalizeStatus(value){
+  const v = normalizeKey(value);
+  if (v.includes("pago") || v.includes("recebido") || v.includes("quitado")) return "Pago/Recebido";
+  if (v.includes("atras")) return "Atrasado";
+  if (v.includes("prev")) return "Previsto";
+  return "Pendente";
+}
+
+function normalizePaymentMethod(value){
+  const v = normalizeKey(value);
+  if (v.includes("boleto")) return "Boleto";
+  if (v.includes("pix")) return "Pix";
+  if (v.includes("credito")) return "Cartão de crédito";
+  if (v.includes("debito")) return "Cartão de débito";
+  if (v.includes("dinheiro")) return "Dinheiro";
+  if (v.includes("transfer")) return "Transferência";
+  return value || "Pix";
+}
+
+function normalizeRecurrence(value){
+  const v = normalizeKey(value);
+  if (v.includes("mens")) return "Mensal";
+  if (v.includes("sem")) return "Semanal";
+  if (v.includes("anu") || v.includes("ano")) return "Anual";
+  return "Não recorrente";
+}
+
+function makeDuplicateKey(item){
+  return [
+    normalizeKey(item.description),
+    normalizeKey(item.type),
+    normalizeKey(item.dueDate || item.date),
+    Number(item.amount || 0).toFixed(2)
+  ].join("|");
+}
+
+function parseCSV(text){
+  const rows = [];
+  let row = [], cell = "", insideQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const next = text[i + 1];
+
+    if (char === '"' && insideQuotes && next === '"') {
+      cell += '"';
+      i++;
+    } else if (char === '"') {
+      insideQuotes = !insideQuotes;
+    } else if ((char === "," || char === ";") && !insideQuotes) {
+      row.push(cell);
+      cell = "";
+    } else if ((char === "\n" || char === "\r") && !insideQuotes) {
+      if (char === "\r" && next === "\n") i++;
+      row.push(cell);
+      if (row.some(v => String(v).trim() !== "")) rows.push(row);
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+  row.push(cell);
+  if (row.some(v => String(v).trim() !== "")) rows.push(row);
+  return rows;
+}
+
+function mapCSVRow(headers, row){
+  const get = (...names) => {
+    for (const name of names) {
+      const idx = headers.findIndex(h => normalizeKey(h) === normalizeKey(name));
+      if (idx >= 0) return row[idx] || "";
+    }
+    return "";
+  };
+
+  const date = normalizeDate(get("date","data","data de emissão","data emissao","lançamento","lancamento")) || new Date().toISOString().slice(0,10);
+  const dueDate = normalizeDate(get("dueDate","vencimento","data de vencimento","venc."));
+  const type = normalizeType(get("type","tipo","categoria do lançamento","categoria lancamento"));
+  const paymentMethod = normalizePaymentMethod(get("paymentMethod","pagamento","forma de pagamento","método","metodo"));
+  const finalDue = dueDate || date;
+
+  return {
+    date,
+    dueDate: finalDue,
+    expectedDate: normalizeDate(get("expectedDate","previsão caixa","previsao caixa","data prevista","previsto")) || calculateExpectedDate(finalDue, paymentMethod),
+    description: get("description","descrição","descricao","cliente","conta","nome").trim(),
+    type,
+    category: get("category","categoria","grupo").trim() || "Sem categoria",
+    amount: normalizeMoney(get("amount","valor","preço","preco")),
+    paymentStatus: normalizeStatus(get("paymentStatus","status","situação","situacao")),
+    paymentMethod,
+    recurrence: normalizeRecurrence(get("recurrence","recorrência","recorrencia")),
+    recurrenceCount: Number(get("recurrenceCount","meses","parcelas","quantidade")) || 1,
+    owner: get("owner","responsável","responsavel","dono").trim(),
+    notes: get("notes","observação","observacao","obs").trim(),
+    importedAt: new Date().toISOString()
+  };
+}
+
+
+
+let bulkPreviewItems = [];
+
+function findMoneyInText(text){
+  const clean = String(text || "");
+  const matches = clean.match(/R\$\s?[\d\.\,]+|(?:valor\s*[:\-]?\s*)?[\d]{2,}(?:[\.,]\d{2})?/i);
+  return matches ? {raw: matches[0], index: clean.indexOf(matches[0])} : null;
+}
+
+function parseBulkLine(line){
+  const clean = String(line || "").replace(/\t+/g, " ").replace(/\s+/g, " ").trim();
+  if(!clean) return null;
+
+  const moneyMatch = findMoneyInText(clean);
+  if(!moneyMatch) return null;
+
+  const amount = normalizeMoney(moneyMatch.raw);
+  if(amount <= 0) return null;
+
+  const beforeMoney = clean.slice(0, moneyMatch.index).trim();
+  const afterMoney = clean.slice(moneyMatch.index + moneyMatch.raw.length).trim();
+
+  const recurrenceTerms = [
+    "Cobrança Recorrente","Cobranca Recorrente","Recorrente","Mensalidade",
+    "Pagamento Único","Pagamento Unico","Único","Unico","Mensal","Anual"
+  ];
+
+  let client = beforeMoney;
+  let recurrenceText = "";
+  for(const term of recurrenceTerms){
+    const idx = normalizeKey(beforeMoney).indexOf(normalizeKey(term));
+    if(idx >= 0){
+      client = beforeMoney.slice(0, idx).trim();
+      recurrenceText = term;
+      break;
+    }
+  }
+
+  if(!client){
+    const words = clean.replace(moneyMatch.raw,"").trim().split(/\s+/);
+    client = words.slice(0, Math.min(3, words.length)).join(" ");
+  }
+
+  const normalizedRec = normalizeKey(`${recurrenceText} ${clean}`);
+  let recurrence = "Não recorrente";
+  if(normalizedRec.includes("recorrente") || normalizedRec.includes("mensalidade") || normalizedRec.includes("mensal")) recurrence = "Mensal";
+  if(normalizedRec.includes("anual")) recurrence = "Anual";
+  if(normalizedRec.includes("unico")) recurrence = "Não recorrente";
+
+  const descriptionDetail = afterMoney || recurrenceText || "Cobrança";
+  const description = client ? `${client} - ${descriptionDetail}` : descriptionDetail;
+
+  return {
+    client,
+    description,
+    amount,
+    recurrence,
+    notes: clean
+  };
+}
+
+function getBulkParsedItems(){
+  const text = document.getElementById("bulkText").value;
+  return text
+    .split(/\n+/)
+    .map(parseBulkLine)
+    .filter(Boolean);
+}
+
+function previewBulkText(){
+  const items = getBulkParsedItems();
+  const preview = document.getElementById("bulkPreview");
+  const msg = document.getElementById("bulkStatusMsg");
+
+  if(!items.length){
+    msg.textContent = "Nenhum lançamento identificado. Tente informar nome + valor. Ex: Cliente X 1500 gestão de tráfego.";
+    preview.innerHTML = "";
+    bulkPreviewItems = [];
+    return;
+  }
+
+  bulkPreviewItems = items.map((item, index) => ({...item, _idx:index}));
+  msg.textContent = `${items.length} lançamentos identificados. Edite antes de importar se precisar.`;
+  preview.innerHTML = `<div class="wideTableWrap"><table class="bulkPreviewTable">
+    <thead><tr><th>Cliente</th><th>Descrição</th><th>Valor</th><th>Recorrência</th><th>Observação</th></tr></thead>
+    <tbody>
+      ${bulkPreviewItems.map((item, idx) => `<tr>
+        <td><input value="${safe(item.client)}" onchange="bulkPreviewItems[${idx}].client=this.value"></td>
+        <td><textarea onchange="bulkPreviewItems[${idx}].description=this.value">${safe(item.description)}</textarea></td>
+        <td><input type="number" step="0.01" value="${Number(item.amount||0)}" onchange="bulkPreviewItems[${idx}].amount=Number(this.value||0)"></td>
+        <td>
+          <select onchange="bulkPreviewItems[${idx}].recurrence=this.value">
+            ${["Não recorrente","Mensal","Semanal","Anual"].map(opt => `<option ${opt===item.recurrence?"selected":""}>${opt}</option>`).join("")}
+          </select>
+        </td>
+        <td><textarea onchange="bulkPreviewItems[${idx}].notes=this.value">${safe(item.notes||"")}</textarea></td>
+      </tr>`).join("")}
+    </tbody>
+  </table></div>`;
+}
+
+async function importBulkText(){
+  if(!user) return alert("Faça login primeiro.");
+  const parsed = bulkPreviewItems.length ? bulkPreviewItems : getBulkParsedItems();
+  const msg = document.getElementById("bulkStatusMsg");
+  if(!parsed.length) return alert("Nenhuma linha válida encontrada.");
+
+  const due = document.getElementById("bulkDueDate").value || new Date().toISOString().slice(0,10);
+  const type = document.getElementById("bulkType").value;
+  const paymentStatus = document.getElementById("bulkStatus").value;
+  const paymentMethod = document.getElementById("bulkPayment").value;
+  const months = Math.max(1, Number(document.getElementById("bulkMonths").value || 1));
+  const category = document.getElementById("bulkCategory").value || "Cliente";
+
+  const currentSnapshot = await collectionRef().get();
+  const existingMap = new Map();
+  currentSnapshot.forEach(doc => {
+    const item = { id: doc.id, ...doc.data() };
+    existingMap.set(makeDuplicateKey(item), doc.id);
+  });
+
+  let created = 0, updated = 0;
+  let batch = db.batch();
+  let ops = 0;
+
+  async function commitIfNeeded(force = false){
+    if(ops >= 400 || (force && ops > 0)){
+      await batch.commit();
+      batch = db.batch();
+      ops = 0;
+    }
+  }
+
+  for(const p of parsed){
+    if(!p.description || Number(p.amount||0) <= 0) continue;
+    const count = p.recurrence === "Não recorrente" ? 1 : months;
+    const groupId = crypto.randomUUID();
+
+    for(let i=0;i<count;i++){
+      const dueDate = p.recurrence === "Mensal" ? addMonths(due, i) : p.recurrence === "Semanal" ? addDays(due, i*7) : p.recurrence === "Anual" ? addYears(due, i) : due;
+      const item = {
+        date: new Date().toISOString().slice(0,10),
+        dueDate,
+        expectedDate: calculateExpectedDate(dueDate, paymentMethod),
+        description: p.description,
+        client: p.client || "",
+        type,
+        category,
+        amount: Number(p.amount || 0),
+        paymentStatus,
+        paymentMethod,
+        recurrence: p.recurrence,
+        recurrenceCount: count,
+        owner: "",
+        notes: p.notes || "",
+        installment: `${i+1}/${count}`,
+        recurrenceGroupId: groupId,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      const key = makeDuplicateKey(item);
+      const existingId = existingMap.get(key);
+
+      if(existingId){
+        batch.set(collectionRef().doc(existingId), item, { merge: true });
+        updated++;
+      } else {
+        const ref = collectionRef().doc();
+        batch.set(ref, {...item, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+        existingMap.set(key, ref.id);
+        created++;
+      }
+
+      ops++;
+      await commitIfNeeded(false);
+    }
+  }
+
+  await commitIfNeeded(true);
+  msg.textContent = `Importação por texto concluída: ${created} criados, ${updated} atualizados/substituídos.`;
+  document.getElementById("bulkText").value = "";
+  document.getElementById("bulkPreview").innerHTML = "";
+  bulkPreviewItems = [];
+}
+
+async function importCSV(){
+  if(!user) return alert("Faça login primeiro.");
+  const fileInput = document.getElementById("csvFile");
+  const status = document.getElementById("importStatus");
+  const file = fileInput.files[0];
+  if(!file) return alert("Selecione um arquivo CSV.");
+
+  status.textContent = "Importando...";
+  const text = await file.text();
+  const rows = parseCSV(text);
+  if(rows.length < 2) {
+    status.textContent = "CSV vazio ou sem cabeçalho.";
+    return;
+  }
+
+  const headers = rows[0].map(h => String(h).trim());
+  const currentSnapshot = await collectionRef().get();
+  const existingMap = new Map();
+
+  currentSnapshot.forEach(doc => {
+    const item = { id: doc.id, ...doc.data() };
+    existingMap.set(makeDuplicateKey(item), doc.id);
+  });
+
+  let created = 0, updated = 0, skipped = 0;
+  const batchLimit = 400;
+  let batch = db.batch();
+  let ops = 0;
+
+  async function commitIfNeeded(force = false){
+    if(ops >= batchLimit || (force && ops > 0)){
+      await batch.commit();
+      batch = db.batch();
+      ops = 0;
+    }
+  }
+
+  for(let i = 1; i < rows.length; i++){
+    const mapped = mapCSVRow(headers, rows[i]);
+    if(!mapped.description || mapped.amount <= 0) {
+      skipped++;
+      continue;
+    }
+
+    const count = mapped.recurrence === "Não recorrente" ? 1 : Math.max(1, Number(mapped.recurrenceCount || 1));
+    const groupId = crypto.randomUUID();
+
+    for(let j = 0; j < count; j++){
+      let dueDate = mapped.dueDate;
+      if(mapped.recurrence === "Mensal") dueDate = addMonths(mapped.dueDate, j);
+      if(mapped.recurrence === "Semanal") dueDate = addDays(mapped.dueDate, j * 7);
+      if(mapped.recurrence === "Anual") dueDate = addYears(mapped.dueDate, j);
+
+      const item = {
+        ...mapped,
+        dueDate,
+        expectedDate: calculateExpectedDate(dueDate, mapped.paymentMethod),
+        installment: `${j+1}/${count}`,
+        recurrenceGroupId: groupId,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      const key = makeDuplicateKey(item);
+      const existingId = existingMap.get(key);
+
+      if(existingId){
+        batch.set(collectionRef().doc(existingId), item, { merge: true });
+        updated++;
+      } else {
+        const ref = collectionRef().doc();
+        batch.set(ref, {
+          ...item,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        existingMap.set(key, ref.id);
+        created++;
+      }
+
+      ops++;
+      await commitIfNeeded(false);
+    }
+  }
+
+  await commitIfNeeded(true);
+  status.textContent = `Importação concluída: ${created} criados, ${updated} atualizados/substituídos, ${skipped} ignorados.`;
+  fileInput.value = "";
+}
+
+function downloadCSVModel(){
+  const headers = ["data","vencimento","descricao","tipo","categoria","status","forma de pagamento","recorrencia","meses","responsavel","valor","observacao"];
+  const example = [
+    "2026-04-01","2026-04-10","Cliente Maestri","Entrada Fixa","Cliente","Pendente","Pix","Mensal","12","Gabriel","1500","Contrato mensal"
+  ];
+  const csv = [headers, example].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(";")).join("\n");
   const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `financeiro_${profile}.csv`;
+  a.download = "modelo_importacao_financeiro.csv";
   a.click();
 }
 
-function safe(str) {
-  return String(str ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+
+
+function isWithdrawal(item){
+  const text = normalizeKey(`${item.type || ""} ${item.category || ""} ${item.description || ""}`);
+  return item.type === "Retirada da Empresa" || text.includes("retirada") || text.includes("pro labore") || text.includes("prolabore") || text.includes("distribuicao");
 }
 
+function getComparisonMonth(){
+  const input = document.getElementById("comparisonMonth");
+  if(input && input.value) return input.value;
+  return getDashboardMonth();
+}
+
+function setComparisonCurrentMonth(){
+  const input = document.getElementById("comparisonMonth");
+  const now = new Date();
+  input.value = now.toISOString().slice(0,7);
+  renderComparison();
+}
+
+function filterByMonth(list, month){
+  return list.filter(item => itemMonth(item) === month);
+}
+
+function filterByYear(list, year){
+  return list.filter(item => itemYear(item) === year);
+}
+
+function sumItems(list){
+  const entradas = list.filter(x=>isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const saidas = list.filter(x=>!isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const retiradas = list.filter(isWithdrawal).reduce((s,x)=>s+Number(x.amount||0),0);
+  return {entradas, saidas, saldo: entradas - saidas, retiradas};
+}
+
+async function getCollectionItems(profileId){
+  if(!user) return [];
+  const snap = await db.collection("users").doc(user.uid).collection(profileId).get();
+  return snap.docs.map(doc => ({id: doc.id, ...doc.data()}));
+}
+
+async function renderComparison(){
+  if(!user) return;
+  ensureCompanies();
+
+  const month = getComparisonMonth();
+  const year = month.slice(0,4);
+
+  const personalAll = await getCollectionItems("pessoal");
+  const personalMonth = sumItems(filterByMonth(personalAll, month));
+  const personalYear = sumItems(filterByYear(personalAll, year));
+
+  let totalCompaniesMonth = {entradas:0, saidas:0, saldo:0, retiradas:0};
+  let totalCompaniesYear = {entradas:0, saidas:0, saldo:0, retiradas:0};
+  const rowsMonth = [];
+  const rowsYear = [];
+
+  for(const company of userSettings.companies){
+    const all = await getCollectionItems(company.id);
+    const monthSummary = sumItems(filterByMonth(all, month));
+    const yearSummary = sumItems(filterByYear(all, year));
+
+    totalCompaniesMonth.entradas += monthSummary.entradas;
+    totalCompaniesMonth.saidas += monthSummary.saidas;
+    totalCompaniesMonth.saldo += monthSummary.saldo;
+    totalCompaniesMonth.retiradas += monthSummary.retiradas;
+
+    totalCompaniesYear.entradas += yearSummary.entradas;
+    totalCompaniesYear.saidas += yearSummary.saidas;
+    totalCompaniesYear.saldo += yearSummary.saldo;
+    totalCompaniesYear.retiradas += yearSummary.retiradas;
+
+    rowsMonth.push({company, ...monthSummary});
+    rowsYear.push({company, ...yearSummary});
+  }
+
+  document.getElementById("cmpEmpresas").textContent = brl(totalCompaniesMonth.saldo);
+  document.getElementById("cmpPessoal").textContent = brl(personalMonth.saldo);
+  document.getElementById("cmpRetiradas").textContent = brl(totalCompaniesMonth.retiradas);
+
+  document.getElementById("cmpEmpresasEntradasAno").textContent = brl(totalCompaniesYear.entradas);
+  document.getElementById("cmpEmpresasCustosAno").textContent = brl(totalCompaniesYear.saidas);
+  document.getElementById("cmpRetiradasAno").textContent = brl(totalCompaniesYear.retiradas);
+
+  const withdrawalRateMonth = totalCompaniesMonth.entradas ? (totalCompaniesMonth.retiradas / totalCompaniesMonth.entradas) * 100 : 0;
+  const withdrawalRateYear = totalCompaniesYear.entradas ? (totalCompaniesYear.retiradas / totalCompaniesYear.entradas) * 100 : 0;
+
+  let insight = "Sem dados suficientes ainda.";
+  if(totalCompaniesMonth.entradas > 0 || totalCompaniesYear.entradas > 0){
+    insight = `No mês, você retirou ${withdrawalRateMonth.toFixed(1)}% das entradas das empresas. No ano, ${withdrawalRateYear.toFixed(1)}%. `;
+    if(withdrawalRateMonth <= 20) insight += "Retirada mensal controlada.";
+    else if(withdrawalRateMonth <= 40) insight += "Atenção: a retirada mensal já pesa no caixa.";
+    else insight += "Alerta: retirada mensal alta pode comprometer capital de giro.";
+  }
+  document.getElementById("cmpInsight").textContent = insight;
+
+  const tbodyMonth = document.getElementById("companyComparisonRows");
+  tbodyMonth.innerHTML = rowsMonth.length ? "" : `<tr><td colspan="5" class="empty">Nenhuma empresa cadastrada.</td></tr>`;
+  rowsMonth.forEach(r => {
+    tbodyMonth.innerHTML += `<tr>
+      <td>${safe(r.company.name)}</td>
+      <td class="positive">${brl(r.entradas)}</td>
+      <td class="negative">${brl(r.saidas)}</td>
+      <td class="${r.saldo >= 0 ? 'positive':'negative'}">${brl(r.saldo)}</td>
+      <td class="warning">${brl(r.retiradas)}</td>
+    </tr>`;
+  });
+
+  const tbodyYear = document.getElementById("companyComparisonRowsYear");
+  tbodyYear.innerHTML = rowsYear.length ? "" : `<tr><td colspan="5" class="empty">Nenhuma empresa cadastrada.</td></tr>`;
+  rowsYear.forEach(r => {
+    tbodyYear.innerHTML += `<tr>
+      <td>${safe(r.company.name)}</td>
+      <td class="positive">${brl(r.entradas)}</td>
+      <td class="negative">${brl(r.saidas)}</td>
+      <td class="${r.saldo >= 0 ? 'positive':'negative'}">${brl(r.saldo)}</td>
+      <td class="warning">${brl(r.retiradas)}</td>
+    </tr>`;
+  });
+
+  document.getElementById("personalComparisonBox").innerHTML = `
+    <div style="display:grid;gap:10px">
+      <div class="card"><small>Saldo pessoal mês</small><strong class="${personalMonth.saldo >= 0 ? 'positive':'negative'}">${brl(personalMonth.saldo)}</strong></div>
+      <div class="card"><small>Entradas pessoais ano</small><strong class="positive">${brl(personalYear.entradas)}</strong></div>
+      <div class="card"><small>Saídas pessoais ano</small><strong class="negative">${brl(personalYear.saidas)}</strong></div>
+      <div class="card"><small>Saldo pessoal ano</small><strong class="${personalYear.saldo >= 0 ? 'positive':'negative'}">${brl(personalYear.saldo)}</strong></div>
+    </div>
+  `;
+}
+
+function exportCSV(){
+  const rows=[["Data","Vencimento","Previsão Caixa","Descrição","Tipo","Categoria","Status","Pagamento","Recorrência","Parcela","Responsável","Valor","Observação"]];
+  items.forEach(x=>rows.push([x.date,x.dueDate||"",x.expectedDate||"",x.description,x.type,x.category,x.paymentStatus||"",x.paymentMethod||"",x.recurrence||"",x.installment||"",x.owner||"",x.amount,x.notes||""]));
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(";")).join("\n");
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download=`financeiro_${profile}.csv`;
+  a.click();
+}
+function safe(str){return String(str??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+
+
+function setupMobileFocusMode(){
+  document.addEventListener("focusin", (e) => {
+    const target = e.target;
+    if(!target || !["INPUT","TEXTAREA","SELECT"].includes(target.tagName)) return;
+    if(window.innerWidth > 700) return;
+
+    document.body.classList.add("typingMode");
+    setTimeout(() => {
+      target.scrollIntoView({behavior:"smooth", block:"center", inline:"nearest"});
+    }, 120);
+  });
+
+  document.addEventListener("focusout", () => {
+    if(window.innerWidth > 700) return;
+    setTimeout(() => {
+      if(!document.activeElement || !["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName)){
+        document.body.classList.remove("typingMode");
+      }
+    }, 160);
+  });
+}
+
+document.addEventListener("click", (e) => {
+  if(e.target && e.target.classList && e.target.classList.contains("modalOverlay")){
+    e.target.classList.remove("active");
+  }
+  const search = document.getElementById("searchResults");
+  if(search && !e.target.closest(".searchBox") && !e.target.closest(".searchResults")){
+    search.classList.remove("active");
+  }
+});
+
+setupMobileFocusMode();
+renderUserUI(null);
+renderCompanyName();
 clearForm();
+setCurrentMonth();
+if(document.getElementById('comparisonMonth')) document.getElementById('comparisonMonth').value = getDashboardMonth();
 render();
 </script>
 </body>
