@@ -223,7 +223,7 @@
         bottom:calc(env(safe-area-inset-bottom) + 10px);
         z-index:9990;
         display:grid;
-        grid-template-columns:repeat(5,1fr);
+        grid-template-columns:repeat(6,1fr);
         gap:6px;
         width:auto;
         padding:8px;
@@ -405,6 +405,118 @@
       .bulkPreviewTable{min-width:900px}
     }
 
+  
+    /* v23 — Base 1.0 profissional */
+    .setupGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+    .setupCard{background:rgba(255,255,255,.045);border:1px solid var(--line);border-radius:22px;padding:18px}
+    .setupCard h3{margin:0 0 8px;color:var(--text)}
+    .setupCard p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+    .setupBadge{display:inline-flex;padding:6px 10px;border-radius:999px;background:rgba(22,199,168,.14);color:var(--green);font-size:12px;font-weight:900;margin-bottom:10px}
+    .qualityList{display:grid;gap:8px;margin-top:12px}
+    .qualityItem{display:flex;justify-content:space-between;gap:10px;padding:10px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.10)}
+    .qualityItem span{color:var(--muted);font-size:13px}
+    .qualityItem strong{font-size:13px}
+    .onboardingSteps{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
+    .onboardingStep{border:1px solid var(--line);border-radius:18px;padding:14px;background:rgba(255,255,255,.045)}
+    .onboardingStep strong{display:block;margin-bottom:6px}
+    .onboardingStep span{color:var(--muted);font-size:13px;line-height:1.4}
+    .codeBox{white-space:pre-wrap;background:#080c14;border:1px solid var(--line);border-radius:16px;padding:14px;color:#dbeafe;font-size:12px;line-height:1.45;max-height:360px;overflow:auto}
+    .topVersion{font-size:12px;color:var(--muted);padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.05)}
+    @media(max-width:800px){
+      .setupGrid,.onboardingSteps{grid-template-columns:1fr}
+      .qualityItem{display:block}
+      .qualityItem strong{display:block;margin-top:4px}
+    }
+
+  
+    /* v24 — Sidebar desktop fixa, altura total e scroll próprio */
+    @media (min-width:701px){
+      html, body{
+        min-height:100%;
+        overflow-x:hidden;
+      }
+
+      body{
+        min-height:100vh;
+      }
+
+      .app{
+        display:block !important;
+        min-height:100vh;
+        width:100%;
+      }
+
+      .sidebar{
+        position:fixed !important;
+        top:0 !important;
+        left:0 !important;
+        bottom:0 !important;
+        width:250px !important;
+        min-width:250px !important;
+        height:100vh !important;
+        height:100dvh !important;
+        max-height:100vh !important;
+        max-height:100dvh !important;
+        overflow-y:auto !important;
+        overflow-x:hidden !important;
+        z-index:1000;
+        padding-bottom:36px !important;
+        scrollbar-gutter:stable;
+      }
+
+      .sidebar::-webkit-scrollbar{
+        width:8px;
+      }
+
+      .sidebar::-webkit-scrollbar-track{
+        background:rgba(255,255,255,.03);
+      }
+
+      .sidebar::-webkit-scrollbar-thumb{
+        background:rgba(255,255,255,.18);
+        border-radius:999px;
+      }
+
+      .sidebar::-webkit-scrollbar-thumb:hover{
+        background:rgba(22,199,168,.35);
+      }
+
+      .main{
+        margin-left:250px !important;
+        width:calc(100% - 250px) !important;
+        min-height:100vh !important;
+        overflow:visible !important;
+      }
+
+      .navTabs{
+        margin-bottom:28px;
+      }
+
+      .sideButton{
+        margin-bottom:18px;
+      }
+    }
+
+    @media (max-width:700px){
+      .app{
+        display:block !important;
+      }
+
+      .sidebar{
+        position:relative !important;
+        width:100% !important;
+        min-width:0 !important;
+        height:auto !important;
+        max-height:none !important;
+        overflow:visible !important;
+      }
+
+      .main{
+        margin-left:0 !important;
+        width:100% !important;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -446,6 +558,7 @@
       <button class="navTab" onclick="setSection(event,'registros')">Registros</button>
       <button class="navTab" onclick="setSection(event,'relatorios')">Relatórios</button>
       <button class="navTab" onclick="setSection(event,'comparativo')">Comparativo</button>
+      <button class="navTab" onclick="setSection(event,'setup')">Setup 1.0</button>
     </nav>
 
     <div class="sideLabel">Sistema</div>
@@ -463,6 +576,7 @@
         <span>🔎</span>
         <input id="platformSearch" placeholder="Pesquisar na plataforma..." oninput="handlePlatformSearch(this.value)">
       </div>
+      <div class="topVersion">v1.0 base</div>
       <div class="topUser">
         <div id="topAvatar" class="avatar">?</div>
         <span id="topUserLabel">Faça login</span>
@@ -509,16 +623,23 @@
     </div>
 
     <div class="grid4">
-      <div class="card"><div><small>Receitas do período</small><strong id="totalEntradas" class="positive">R$ 0,00</strong></div><div class="metricSub">Entradas fixas + variáveis</div></div>
-      <div class="card"><div><small>Despesas do período</small><strong id="totalSaidas" class="negative">R$ 0,00</strong></div><div class="metricSub">Saídas + custos</div></div>
+      <div class="card"><div><small>Entradas previstas no mês</small><strong id="totalEntradas" class="positive">R$ 0,00</strong></div><div class="metricSub">Tudo que está previsto para entrar</div></div>
+      <div class="card"><div><small>Saídas previstas no mês</small><strong id="totalSaidas" class="negative">R$ 0,00</strong></div><div class="metricSub">Custos, despesas e retiradas</div></div>
       <div class="card"><div><small>Resultado operacional</small><strong id="saldo" class="info">R$ 0,00</strong></div><div class="metricSub">Entradas menos saídas</div></div>
-      <div class="card"><div><small>A receber</small><strong id="aReceber" class="warning">R$ 0,00</strong></div><div class="metricSub">Valores ainda pendentes</div></div>
+      <div class="card"><div><small>A receber no mês</small><strong id="aReceber" class="warning">R$ 0,00</strong></div><div class="metricSub">Entradas ainda não confirmadas</div></div>
     </div>
     <div class="grid4">
+      <div class="card"><small>Recebido no mês</small><strong id="recebidoMes" class="positive">R$ 0,00</strong><div class="metricSub">Entradas confirmadas como pagas/recebidas</div></div>
+      <div class="card"><small>Saídas pagas</small><strong id="saidasPagasMes" class="negative">R$ 0,00</strong><div class="metricSub">Custos/saídas já confirmados</div></div>
+      <div class="card"><small>A pagar no mês</small><strong id="aPagar" class="negative">R$ 0,00</strong><div class="metricSub">Saídas ainda pendentes</div></div>
+      <div class="card"><small>Resultado confirmado</small><strong id="resultadoConfirmado" class="info">R$ 0,00</strong><div class="metricSub">Recebido menos saídas pagas</div></div>
+    </div>
+
+    <div class="grid4">
       <div class="card"><small>Custos do mês</small><strong id="fixos" class="warning">R$ 0,00</strong></div>
-      <div class="card"><small>A pagar no mês</small><strong id="aPagar" class="negative">R$ 0,00</strong></div>
       <div class="card"><small>Entradas anuais</small><strong id="entradasAno" class="positive">R$ 0,00</strong></div>
       <div class="card"><small>Custos anuais</small><strong id="custosAno" class="negative">R$ 0,00</strong></div>
+      <div class="card"><small>Lançamentos do mês</small><strong id="lancamentosMes" class="info">0</strong></div>
     </div>
     <div class="grid2">
       <div class="panel chartBox"><h2>Resultado por categoria</h2><p class="status">Distribuição financeira por categoria</p><canvas id="categoryChart"></canvas></div>
@@ -735,6 +856,96 @@
     </div>
   </section>
 
+
+  <section id="setup" class="section">
+    <div class="panel">
+      <div class="toolbar">
+        <div>
+          <h2>Setup 1.0 Profissional</h2>
+          <p class="status">Base para transformar o sistema em um produto mais estável, seguro e vendável.</p>
+        </div>
+        <div class="btns">
+          <button class="primary" onclick="openOnboardingModal()">Abrir onboarding</button>
+          <button class="secondary" onclick="runDataHealthCheck()">Verificar dados</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="setupGrid">
+      <div class="setupCard">
+        <span class="setupBadge">1. Estrutura</span>
+        <h3>Base técnica organizada</h3>
+        <p>O sistema mantém Firebase fixo, dados separados por usuário e áreas separadas por pessoal/empresa. Próximo salto técnico: migrar para Next.js + componentes.</p>
+      </div>
+      <div class="setupCard">
+        <span class="setupBadge">2. Banco</span>
+        <h3>Padronização de dados</h3>
+        <p>Use a verificação de dados para identificar lançamentos sem data, valor, tipo ou status. Isso evita bugs no dashboard.</p>
+      </div>
+      <div class="setupCard">
+        <span class="setupBadge">3. Dashboard</span>
+        <h3>Mensal + anual</h3>
+        <p>O painel principal trabalha por mês selecionado e mantém totais anuais separados para não distorcer despesas parceladas.</p>
+      </div>
+      <div class="setupCard">
+        <span class="setupBadge">4. Edição</span>
+        <h3>Editar por modal</h3>
+        <p>A edição fica centralizada em formulário, reduzindo erros em tabela e melhorando mobile.</p>
+      </div>
+      <div class="setupCard">
+        <span class="setupBadge">5. Mobile</span>
+        <h3>Experiência tipo app</h3>
+        <p>Cards mobile, dock inferior, modais em tela cheia e foco em campos foram adicionados para uso no celular.</p>
+      </div>
+      <div class="setupCard">
+        <span class="setupBadge">6. Importação</span>
+        <h3>Texto e CSV</h3>
+        <p>Importação por texto com pré-edição e CSV com atualização de duplicados já fazem parte da base.</p>
+      </div>
+      <div class="setupCard">
+        <span class="setupBadge">7. Segurança</span>
+        <h3>Regras Firebase</h3>
+        <p>Baixe as regras recomendadas e aplique no Firebase para proteger dados por usuário autenticado.</p>
+        <div class="btns"><button class="secondary" onclick="downloadFirebaseRules()">Baixar regras</button></div>
+      </div>
+      <div class="setupCard">
+        <span class="setupBadge">8. Layout</span>
+        <h3>Design consistente</h3>
+        <p>Visual premium com cards, glass, blur e navegação lateral/mobile. Próximo passo: design system com tokens e componentes.</p>
+      </div>
+      <div class="setupCard">
+        <span class="setupBadge">9. Onboarding</span>
+        <h3>Primeiro uso guiado</h3>
+        <p>O onboarding orienta o empresário a configurar empresa, lançar entradas, custos e importar dados.</p>
+      </div>
+      <div class="setupCard">
+        <span class="setupBadge">10. Comparativo</span>
+        <h3>Pessoal x Empresas</h3>
+        <p>Comparativo mensal e anual permite entender quanto o empresário retira da empresa e como isso afeta caixa pessoal e empresarial.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="toolbar">
+        <div>
+          <h2>Backup e qualidade dos dados</h2>
+          <p class="status">Antes de grandes alterações, exporte um backup completo.</p>
+        </div>
+        <div class="btns">
+          <button class="secondary" onclick="exportFullBackup()">Exportar backup JSON</button>
+          <button class="secondary" onclick="downloadDataSchema()">Baixar schema</button>
+        </div>
+      </div>
+      <div id="dataHealthResults" class="qualityList"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Regras Firebase recomendadas</h2>
+      <p class="status">Aplique no Firebase Console → Firestore Database → Rules.</p>
+      <div id="firebaseRulesPreview" class="codeBox"></div>
+    </div>
+  </section>
+
   </main>
 </div>
 
@@ -923,6 +1134,49 @@
 
   <div class="typingHelper" id="typingHelper">Modo digitação ativo — o campo em edição será centralizado automaticamente.</div>
 
+  <div id="onboardingModal" class="modalOverlay">
+    <div class="modal modalWide">
+      <div class="modalHeader">
+        <h2>Bem-vindo ao Setup 1.0</h2>
+        <button class="secondary" onclick="closeOnboardingModal()">Fechar</button>
+      </div>
+
+      <p class="status">Siga estes passos para deixar o sistema pronto para uso profissional.</p>
+
+      <div class="onboardingSteps">
+        <div class="onboardingStep">
+          <strong>1. Configure sua empresa</strong>
+          <span>Adicione ou renomeie sua empresa no menu lateral.</span>
+        </div>
+        <div class="onboardingStep">
+          <strong>2. Lance entradas recorrentes</strong>
+          <span>Cadastre clientes mensais, contratos e receitas previsíveis.</span>
+        </div>
+        <div class="onboardingStep">
+          <strong>3. Lance custos fixos</strong>
+          <span>Inclua ferramentas, aluguel, folha, internet e compromissos mensais.</span>
+        </div>
+        <div class="onboardingStep">
+          <strong>4. Importe sua planilha</strong>
+          <span>Use importação por texto ou CSV e revise a prévia antes de importar.</span>
+        </div>
+        <div class="onboardingStep">
+          <strong>5. Confirme pagamentos</strong>
+          <span>Quando receber ou pagar algo, confirme para atualizar recebidos, a receber, pagos e a pagar.</span>
+        </div>
+        <div class="onboardingStep">
+          <strong>6. Revise o comparativo</strong>
+          <span>Veja se suas retiradas pessoais estão saudáveis para a empresa.</span>
+        </div>
+      </div>
+
+      <div class="btns">
+        <button class="primary" onclick="completeOnboarding()">Concluir onboarding</button>
+        <button class="secondary" onclick="setSectionById('lancamentos');closeOnboardingModal()">Ir para lançamentos</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyCEaxOeZJYS8d7csvFkEzjI_MCE9_BN_dg",
@@ -941,7 +1195,7 @@ const db = firebase.firestore();
 let profile = "pessoal";
 let items = [];
 let user = null;
-let userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "" };
+let userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "", onboardingComplete: false, appVersion: "1.0" };
 let unsubscribe = null;
 let categoryChart, flowChart;
 
@@ -961,7 +1215,8 @@ function setSectionById(id){
       (id === "lancamentos" && normalizeKey(b.textContent).includes("lancamento")) ||
       (id === "registros" && normalizeKey(b.textContent).includes("registro")) ||
       (id === "relatorios" && normalizeKey(b.textContent).includes("relatorio")) ||
-      (id === "comparativo" && normalizeKey(b.textContent).includes("comparativo"))) {
+      (id === "comparativo" && normalizeKey(b.textContent).includes("comparativo")) ||
+      (id === "setup" && normalizeKey(b.textContent).includes("setup"))) {
       b.classList.add("active");
     }
   });
@@ -1026,7 +1281,7 @@ function runSearchResult(index){
   if(b) b.value = "";
 }
 
-function updateFinancialHealth({entradas, saidas, saldo, aReceber, aPagar}){
+function updateFinancialHealth({entradas, saidas, saldo, aReceber, aPagar, recebidoMes=0, saidasPagasMes=0, resultadoConfirmado=0}){
   const panel = document.getElementById("financialHealthPanel");
   if(!panel) return;
   const icon = document.getElementById("financialHealthIcon");
@@ -1038,24 +1293,24 @@ function updateFinancialHealth({entradas, saidas, saldo, aReceber, aPagar}){
   if(entradas === 0 && saidas === 0){
     icon.textContent = "🧭";
     title.textContent = "Comece lançando suas movimentações";
-    msg.textContent = "Assim que houver entradas e custos, o sistema mostra se o mês está saudável ou em risco.";
+    msg.textContent = "Assim que houver entradas e custos, o sistema mostra o que já foi recebido, o que ainda falta receber e o risco do mês.";
     return;
   }
 
-  if(saldo > 0 && aPagar <= saldo){
+  if(resultadoConfirmado >= 0 && saldo > 0 && aPagar <= (recebidoMes + aReceber)){
     icon.textContent = "💚";
     title.textContent = "Finanças saudáveis neste mês";
-    msg.textContent = `Você está com saldo positivo de ${brl(saldo)}. Mantendo o ritmo, sobra dinheiro após os compromissos previstos.`;
-  } else if(saldo >= 0 && aPagar > saldo){
+    msg.textContent = `Você já recebeu ${brl(recebidoMes)} e ainda tem ${brl(aReceber)} a receber. Se tudo entrar, sobra ${brl(saldo)} no mês.`;
+  } else if(saldo >= 0 && aPagar > recebidoMes){
     panel.classList.add("warning");
     icon.textContent = "⚠️";
     title.textContent = "Atenção ao caixa";
-    msg.textContent = `O saldo está positivo, mas os pagamentos pendentes (${brl(aPagar)}) podem pressionar o caixa.`;
+    msg.textContent = `Você tem ${brl(aReceber)} a receber e ${brl(aPagar)} a pagar. Confirme recebimentos para reduzir risco de caixa.`;
   } else {
     panel.classList.add("risk");
     icon.textContent = "🚨";
     title.textContent = "Risco financeiro no mês";
-    msg.textContent = `As saídas estão maiores que as entradas em ${brl(Math.abs(saldo))}. Revise custos, vencimentos e recebimentos pendentes.`;
+    msg.textContent = `As saídas previstas superam as entradas em ${brl(Math.abs(saldo))}. Recebido até agora: ${brl(recebidoMes)}.`;
   }
 }
 
@@ -1068,6 +1323,156 @@ function setEditDateQuick(fieldId, mode){
   if(mode === "nextMonth") input.value = addMonths(base, 1);
 }
 
+
+
+const FIREBASE_RULES_TEXT = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /users/{userId}/{document=**} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+  }
+}`;
+
+const DATA_SCHEMA_TEXT = `Finance Control — Schema 1.0
+
+Coleções:
+users/{uid}/pessoal/{transactionId}
+users/{uid}/{companyId}/{transactionId}
+users/{uid}/settings/profile
+
+Campos principais de lançamentos:
+date: YYYY-MM-DD
+dueDate: YYYY-MM-DD
+expectedDate: YYYY-MM-DD
+description: string
+type: Entrada Fixa | Entrada Variável | Saída | Custo Fixo | Custo Variável | Retirada da Empresa
+category: string
+amount: number
+paymentStatus: Pendente | Previsto | Pago/Recebido | Atrasado
+paymentMethod: Pix | Boleto | Transferência | Cartão de crédito | Cartão de débito | Dinheiro | Outro
+recurrence: Não recorrente | Mensal | Semanal | Anual
+installment: string
+recurrenceGroupId: string
+owner: string
+notes: string`;
+
+function openOnboardingModal(){
+  document.getElementById("onboardingModal").classList.add("active");
+}
+
+function closeOnboardingModal(){
+  document.getElementById("onboardingModal").classList.remove("active");
+}
+
+async function completeOnboarding(){
+  if(!user) return;
+  userSettings.onboardingComplete = true;
+  userSettings.appVersion = "1.0";
+  await db.collection("users").doc(user.uid).collection("settings").doc("profile").set({
+    onboardingComplete: true,
+    appVersion: "1.0",
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+  closeOnboardingModal();
+  alert("Onboarding concluído.");
+}
+
+function downloadTextFile(filename, content){
+  const blob = new Blob([content], {type:"text/plain;charset=utf-8;"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function downloadFirebaseRules(){
+  downloadTextFile("firestore.rules", FIREBASE_RULES_TEXT);
+}
+
+function downloadDataSchema(){
+  downloadTextFile("finance_control_schema_1_0.txt", DATA_SCHEMA_TEXT);
+}
+
+function renderFirebaseRulesPreview(){
+  const box = document.getElementById("firebaseRulesPreview");
+  if(box) box.textContent = FIREBASE_RULES_TEXT;
+}
+
+async function exportFullBackup(){
+  if(!user) return alert("Faça login primeiro.");
+  ensureCompanies();
+
+  const backup = {
+    exportedAt: new Date().toISOString(),
+    appVersion: "1.0",
+    user: {
+      uid: user.uid,
+      email: user.email || ""
+    },
+    settings: userSettings,
+    data: {}
+  };
+
+  backup.data.pessoal = await getCollectionItems("pessoal");
+
+  for(const company of userSettings.companies){
+    backup.data[company.id] = await getCollectionItems(company.id);
+  }
+
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:"application/json;charset=utf-8;"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "backup_finance_control_1_0.json";
+  a.click();
+}
+
+function validateItem(item){
+  const problems = [];
+  if(!item.description) problems.push("sem descrição");
+  if(!item.type) problems.push("sem tipo");
+  if(!item.date && !item.dueDate && !item.expectedDate) problems.push("sem data");
+  if(!item.amount || Number(item.amount) <= 0) problems.push("valor inválido");
+  if(!item.paymentStatus) problems.push("sem status");
+  return problems;
+}
+
+async function runDataHealthCheck(){
+  if(!user) return alert("Faça login primeiro.");
+  ensureCompanies();
+
+  const resultBox = document.getElementById("dataHealthResults");
+  resultBox.innerHTML = "";
+
+  const scopes = [{id:"pessoal", name:"Pessoal"}, ...userSettings.companies.map(c => ({id:c.id, name:c.name || "Empresa"}))];
+
+  for(const scope of scopes){
+    const list = await getCollectionItems(scope.id);
+    let invalid = 0;
+    let totalAmountProblems = 0;
+
+    list.forEach(item => {
+      const problems = validateItem(item);
+      if(problems.length) invalid++;
+      if(!item.amount || Number(item.amount) <= 0) totalAmountProblems++;
+    });
+
+    resultBox.innerHTML += `
+      <div class="qualityItem">
+        <span>${safe(scope.name)} — ${list.length} lançamentos analisados</span>
+        <strong class="${invalid ? 'warning':'positive'}">${invalid ? invalid + ' com atenção' : 'Tudo certo'}</strong>
+      </div>
+    `;
+  }
+
+  if(!resultBox.innerHTML){
+    resultBox.innerHTML = `<div class="qualityItem"><span>Nenhum dado encontrado.</span><strong class="warning">Comece lançando movimentações</strong></div>`;
+  }
+}
 
 function setStatus(msg){document.getElementById("status").textContent = msg}
 function setSection(evt,id){
@@ -1177,9 +1582,9 @@ async function loadUserSettings(){
   const ref = db.collection("users").doc(user.uid).collection("settings").doc("profile");
   const snap = await ref.get();
   if(snap.exists){
-    userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "", ...snap.data() };
+    userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "", onboardingComplete: false, appVersion: "1.0", ...snap.data() };
   } else {
-    userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "" };
+    userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "", onboardingComplete: false, appVersion: "1.0" };
   }
   ensureCompanies();
   renderCompanyName();
@@ -1290,7 +1695,7 @@ auth.onAuthStateChanged(async u=>{
 
   if(!u){
     items=[];
-    userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "" };
+    userSettings = { companyName: "Empresa", companies: [{id:"midia", name:"Empresa"}], displayName: "", phone: "", role: "", customPhotoURL: "", profileNotes: "", onboardingComplete: false, appVersion: "1.0" };
     renderCompanyName();
     setStatus("🔴 Desconectado. Faça login para salvar na nuvem.");
     render();
@@ -1302,7 +1707,12 @@ auth.onAuthStateChanged(async u=>{
   document.getElementById("email").value="";
   document.getElementById("password").value="";
   setStatus("🟢 Logado como: " + (u.displayName ? u.displayName + " — " : "") + u.email + " | Salvando online no Firebase.");
+  renderFirebaseRulesPreview();
   listenData();
+
+  if(!userSettings.onboardingComplete){
+    setTimeout(openOnboardingModal, 700);
+  }
 });
 
 function listenData(){
@@ -1659,11 +2069,15 @@ function render(){
   const saidas=monthItems.filter(x=>!isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
   const custosMes=monthItems.filter(x=>x.type==="Custo Fixo" || x.type==="Custo Variável").reduce((s,x)=>s+Number(x.amount||0),0);
   const saldo=entradas-saidas;
+
+  const recebidoMes=monthItems.filter(x=>isEntrada(x.type)&&isPaid(x)).reduce((s,x)=>s+Number(x.amount||0),0);
   const aReceber=monthItems.filter(x=>isEntrada(x.type)&&!isPaid(x)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const saidasPagasMes=monthItems.filter(x=>!isEntrada(x.type)&&isPaid(x)).reduce((s,x)=>s+Number(x.amount||0),0);
   const aPagar=monthItems.filter(x=>!isEntrada(x.type)&&!isPaid(x)).reduce((s,x)=>s+Number(x.amount||0),0);
+  const resultadoConfirmado = recebidoMes - saidasPagasMes;
 
   const entradasAno=yearItems.filter(x=>isEntrada(x.type)).reduce((s,x)=>s+Number(x.amount||0),0);
-  const custosAno=yearItems.filter(x=>x.type==="Custo Fixo" || x.type==="Custo Variável" || x.type==="Saída").reduce((s,x)=>s+Number(x.amount||0),0);
+  const custosAno=yearItems.filter(x=>x.type==="Custo Fixo" || x.type==="Custo Variável" || x.type==="Saída" || x.type==="Retirada da Empresa").reduce((s,x)=>s+Number(x.amount||0),0);
 
   document.getElementById("totalEntradas").textContent=brl(entradas);
   document.getElementById("totalSaidas").textContent=brl(saidas);
@@ -1672,9 +2086,15 @@ function render(){
   document.getElementById("saldo").className=saldo>=0?"positive":"negative";
   document.getElementById("aReceber").textContent=brl(aReceber);
   document.getElementById("aPagar").textContent=brl(aPagar);
+  document.getElementById("recebidoMes").textContent=brl(recebidoMes);
+  document.getElementById("saidasPagasMes").textContent=brl(saidasPagasMes);
+  document.getElementById("resultadoConfirmado").textContent=brl(resultadoConfirmado);
+  document.getElementById("resultadoConfirmado").className=resultadoConfirmado>=0?"positive":"negative";
   document.getElementById("entradasAno").textContent=brl(entradasAno);
   document.getElementById("custosAno").textContent=brl(custosAno);
-  updateFinancialHealth({entradas, saidas, saldo, aReceber, aPagar});
+  document.getElementById("lancamentosMes").textContent=monthItems.length;
+
+  updateFinancialHealth({entradas, saidas, saldo, aReceber, aPagar, recebidoMes, saidasPagasMes, resultadoConfirmado});
 
   renderMainTable();
   renderSplitRecords();
@@ -1684,7 +2104,8 @@ function render(){
 
 function actionBtn(item){
   if(isPaid(item)) return `<span class="pill">Confirmado</span>`;
-  return `<button class="success smallBtn" onclick="markPaid('${item.id}')">Confirmar pago</button>`;
+  const label = isEntrada(item.type) ? "Confirmar recebido" : "Confirmar saída";
+  return `<button class="success smallBtn" onclick="markPaid('${item.id}')">${label}</button>`;
 }
 
 
@@ -1842,7 +2263,7 @@ function mobileCard(item){
     <div class="btns">
       <button class="mobileEditBtn smallBtn" onclick="openTransactionModal('${item.id}')">Editar</button>
       <button class="mobileDetailsBtn smallBtn" onclick="openDescriptionModal('${item.id}')">Detalhes</button>
-      ${isPaid(item) ? `<span class="pill">Confirmado</span>` : `<button class="success smallBtn" onclick="markPaid('${item.id}')">Confirmar</button>`}
+      ${isPaid(item) ? `<span class="pill">Confirmado</span>` : `<button class="success smallBtn" onclick="markPaid('${item.id}')">${isEntrada(item.type) ? "Recebido" : "Pago"}</button>`}
       <button class="danger smallBtn" onclick="removeItem('${item.id}')">Excluir</button>
     </div>
   </div>`;
@@ -2502,6 +2923,7 @@ document.addEventListener("click", (e) => {
 setupMobileFocusMode();
 renderUserUI(null);
 renderCompanyName();
+renderFirebaseRulesPreview();
 clearForm();
 setCurrentMonth();
 if(document.getElementById('comparisonMonth')) document.getElementById('comparisonMonth').value = getDashboardMonth();
